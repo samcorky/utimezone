@@ -20,3 +20,8 @@ print()
 timezone = TimeZone('Asia/Oral')
 print(timezone)
 print(timezone.__dict__)
+
+
+timezone = TimeZone("Pacific/Auckland")
+print(timezone)
+print(timezone.__dict__)
