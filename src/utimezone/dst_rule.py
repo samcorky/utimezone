@@ -1,5 +1,4 @@
 import re  # type: ignore
-import time
 
 from .utils import day_of_week, days_in_month, datetime_to_epoch
 
@@ -97,6 +96,7 @@ class _DSTRule:
             return candidate
         return candidate - 7
 
+    # TODO - Can this be moved out to utils and improved?
     @staticmethod
     def _shift_date(year: int, month: int, day: int, day_shift: int) -> tuple[int, int, int]:
         day += day_shift

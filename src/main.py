@@ -3,6 +3,7 @@ import time
 from utimezone.timezone import TimeZone
 
 timezone = TimeZone('Europe/London')
+timezone._ensure_cache(2026)
 print(timezone)
 print(timezone.__dict__)
 if timezone._dst_start_rule is not None:
@@ -17,6 +18,7 @@ print()
 
 
 timezone = TimeZone('Africa/Bamako')
+timezone._ensure_cache(2026)
 print(timezone)
 print(timezone.__dict__)
 if timezone._dst_start_rule is not None:
@@ -31,6 +33,7 @@ print()
 
 
 timezone = TimeZone('America/Miquelon')
+timezone._ensure_cache(2026)
 print(timezone)
 print(timezone.__dict__)
 if timezone._dst_start_rule is not None:
@@ -46,6 +49,7 @@ print()
 
 
 timezone = TimeZone('Asia/Oral')
+timezone._ensure_cache(2026)
 print(timezone)
 print(timezone.__dict__)
 if timezone._dst_start_rule is not None:
@@ -60,6 +64,7 @@ print()
 
 
 timezone = TimeZone("Pacific/Auckland")
+timezone._ensure_cache(2026)
 print(timezone)
 print(timezone.__dict__)
 if timezone._dst_start_rule is not None:

@@ -1,7 +1,7 @@
 import re
 
-from utimezone.dst_rule import _DSTRule
-from utimezone.db import IANA_TO_POSIX_MAP
+from .dst_rule import _DSTRule
+from .db import IANA_TO_POSIX_MAP
 
 _POSIX_TZ_RE: re.Pattern = re.compile(r"^(<[^>]+>|[A-Za-z]+)([+-]?[0-9]+(:[0-9]+(:[0-9]+)?)?)((<[^>]+>|[A-Za-z]+)([+-]?[0-9]+(:[0-9]+(:[0-9]+)?)?)?)?(,([^,]+),([^,]+))?$")
 
@@ -65,6 +65,23 @@ class TimeZone:
 
             self._dst_start_rule = _DSTRule(start, self._std_offset) if start is not None else None
             self._dst_end_rule = _DSTRule(end, self._dst_offset) if end is not None else None
+
+    def _ensure_cache(self, year: int) -> None:
+        if not self._has_dst:
+            self._cache_year = year
+            self._cache_dst_start = None
+            self._cache_dst_end = None
+            return
+
+        if self._cache_year == year:
+            return
+
+        if self._dst_start_rule is None or self._dst_end_rule is None:
+            raise ValueError(f"Incomplete DST rules for timezone: {self.iana_timezone_name}")
+
+        self._cache_year = year
+        self._cache_dst_start = self._dst_start_rule.get_transition(year)
+        self._cache_dst_end = self._dst_end_rule.get_transition(year)
 
     @staticmethod
     def _offset_str_to_posix_seconds(off: str) -> int:
