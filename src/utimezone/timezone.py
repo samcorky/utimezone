@@ -1,6 +1,6 @@
 import re
 
-from .dst_rule import _DSTRule
+from .dst_rule import _TransitionRule
 from .db import IANA_TO_POSIX_MAP
 
 _POSIX_TZ_RE: re.Pattern = re.compile(r"^(<[^>]+>|[A-Za-z]+)([+-]?[0-9]+(:[0-9]+(:[0-9]+)?)?)((<[^>]+>|[A-Za-z]+)([+-]?[0-9]+(:[0-9]+(:[0-9]+)?)?)?)?(,([^,]+),([^,]+))?$")
@@ -22,8 +22,8 @@ class TimeZone:
         self._dst_offset: int | None = None
 
         # Parsed rule (not absolute timestamps)
-        self._dst_start_rule: _DSTRule | None = None
-        self._dst_end_rule: _DSTRule | None = None
+        self._dst_start_rule: _TransitionRule | None = None
+        self._dst_end_rule: _TransitionRule | None = None
 
         # Per-year computed cache (epoch seconds)
         self._cache_year: int | None = None
@@ -63,8 +63,8 @@ class TimeZone:
             else:
                 self._dst_offset = -self._offset_str_to_posix_seconds(dst_off)
 
-            self._dst_start_rule = _DSTRule(start, self._std_offset) if start is not None else None
-            self._dst_end_rule = _DSTRule(end, self._dst_offset) if end is not None else None
+            self._dst_start_rule = _TransitionRule(start, self._std_offset) if start is not None else None
+            self._dst_end_rule = _TransitionRule(end, self._dst_offset) if end is not None else None
 
     def _ensure_cache(self, year: int) -> None:
         if not self._has_dst:

@@ -3,7 +3,7 @@ import re  # type: ignore
 from .utils import day_of_week, days_in_month, datetime_to_epoch
 
 
-class _DSTRule:
+class _TransitionRule:
     """
     Compact, MicroPython-friendly representation of a POSIX TZ 'Mm.w.d[/time]' rule.
 
@@ -133,4 +133,4 @@ class _DSTRule:
         return int(naive_epoch) - self.transition_offset_seconds
 
     def __repr__(self) -> str:
-        return f"_DSTRule(posix_rule={self.posix_rule}, month={self.month}, week={self.week}, weekday={self.weekday}, seconds={self.seconds})"
+        return f"_TransitionRule(posix_rule={self.posix_rule}, month={self.month}, week={self.week}, weekday={self.weekday}, seconds={self.seconds})"
