@@ -63,8 +63,8 @@ class TimeZone:
             else:
                 self._dst_offset = -self._offset_str_to_posix_seconds(dst_off)
 
-            self._dst_start_rule = _DSTRule(start) if start is not None else None
-            self._dst_end_rule = _DSTRule(end) if end is not None else None
+            self._dst_start_rule = _DSTRule(start, self._std_offset) if start is not None else None
+            self._dst_end_rule = _DSTRule(end, self._dst_offset) if end is not None else None
 
     @staticmethod
     def _offset_str_to_posix_seconds(off: str) -> int:

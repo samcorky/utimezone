@@ -1,4 +1,8 @@
 import re  # type: ignore
+import time
+
+from .utils import day_of_week, days_in_month, datetime_to_epoch
+
 
 class _DSTRule:
     """
@@ -11,7 +15,7 @@ class _DSTRule:
       seconds: transition time in seconds from 00:00 (can be negative or >86400)
     """
 
-    def __init__(self, posix_rule: str) -> None:
+    def __init__(self, posix_rule: str, transition_offset_seconds: int = 0) -> None:
         if posix_rule is None:
             raise ValueError("posix_rule must not be None")
 
@@ -24,6 +28,7 @@ class _DSTRule:
         self.weekday: int = 0
         self.seconds: int = 0
 
+        self.transition_offset_seconds = transition_offset_seconds
         self._parse_posix_rule()
 
     @staticmethod
@@ -78,12 +83,54 @@ class _DSTRule:
         time_s = m.group(5)
         self.seconds = 2 * 3600 if time_s is None else self._parse_time_to_seconds(time_s)
 
+    def _resolve_day_of_month(self, year: int) -> int:
+        first_weekday = day_of_week(year, self.month, 1)
+        days_total = days_in_month(year, self.month)
+
+        first_match = 1 + (self.weekday - first_weekday) % 7
+
+        if self.week < 5:
+            return first_match + (self.week - 1) * 7
+
+        candidate = first_match + 28
+        if candidate <= days_total:
+            return candidate
+        return candidate - 7
+
+    @staticmethod
+    def _shift_date(year: int, month: int, day: int, day_shift: int) -> tuple[int, int, int]:
+        day += day_shift
+
+        while day < 1:
+            month -= 1
+            if month < 1:
+                month = 12
+                year -= 1
+            day += days_in_month(year, month)
+
+        while day > days_in_month(year, month):
+            day -= days_in_month(year, month)
+            month += 1
+            if month > 12:
+                month = 1
+                year += 1
+
+        return year, month, day
+
     def get_transition(self, year: int) -> int:
-        """"""
+        day = self._resolve_day_of_month(year)
 
+        day_shift = self.seconds // 86400
+        second_of_day = self.seconds % 86400
 
+        hour = second_of_day // 3600
+        minute = (second_of_day % 3600) // 60
+        second = second_of_day % 60
 
-        return transitions
+        trans_year, trans_month, trans_day = self._shift_date(year, self.month, day, day_shift)
+
+        naive_epoch = datetime_to_epoch(trans_year, trans_month, trans_day, hour, minute, second)
+        return int(naive_epoch) - self.transition_offset_seconds
 
     def __repr__(self) -> str:
         return f"_DSTRule(month={self.month}, week={self.week}, weekday={self.weekday}, seconds={self.seconds})"

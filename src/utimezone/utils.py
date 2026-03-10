@@ -23,3 +23,19 @@ def day_of_week(year: int, month: int, day: int) -> int:
 
     # Zeller's returns 0=Saturday … 6=Friday, convert to Sunday=0
     return (h + 6) % 7
+
+def datetime_to_epoch(year: int, month: int, day: int, hour: int, minute: int, second: int) -> int:
+    y = year
+    m = month
+
+    if m <= 2:
+        y -= 1
+        m += 12
+
+    era = y // 400
+    yoe = y - era * 400
+    doy = (153 * (m - 3) + 2) // 5 + day - 1
+    doe = yoe * 365 + yoe // 4 - yoe // 100 + doy
+    days_since_epoch = era * 146097 + doe - 719468
+
+    return days_since_epoch * 86400 + hour * 3600 + minute * 60 + second

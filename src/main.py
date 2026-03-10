@@ -1,8 +1,16 @@
+import time
+
 from utimezone.timezone import TimeZone
 
 timezone = TimeZone('Europe/London')
 print(timezone)
 print(timezone.__dict__)
+dst_start = timezone._dst_start_rule.get_transition(2023)
+print(dst_start)
+print(time.gmtime(dst_start))
+dst_end = timezone._dst_end_rule.get_transition(2023)
+print(dst_end)
+print(time.gmtime(dst_end))
 print()
 
 timezone = TimeZone('Africa/Bamako')
