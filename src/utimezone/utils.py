@@ -3,3 +3,23 @@ def is_leap_year(year: int) -> bool:
 
 def days_in_month(year: int, month: int) -> int:
     return 28 + int(is_leap_year(year)) if month == 2 else 31 - month % 7 % 2
+
+def is_valid_date(year: int, month: int, day: int) -> bool:
+    return 1 <= month <= 12 and 1 <= day <= days_in_month(year, month)
+
+def day_of_week(year: int, month: int, day: int) -> int:
+    """
+    Zeller's Congruence for the Gregorian calendar.
+    Returns 0=Sunday, 1=Monday, ..., 6=Saturday.
+    """
+    if month < 3:
+        month += 12
+        year -= 1
+
+    k = year % 100
+    j = year // 100
+
+    h = (day + (13*(month+1)) // 5 + k + k // 4 + j // 4 + 5 * j) % 7
+
+    # Zeller's returns 0=Saturday … 6=Friday, convert to Sunday=0
+    return (h + 6) % 7
