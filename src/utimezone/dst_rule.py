@@ -133,4 +133,4 @@ class _DSTRule:
         return int(naive_epoch) - self.transition_offset_seconds
 
     def __repr__(self) -> str:
-        return f"_DSTRule(month={self.month}, week={self.week}, weekday={self.weekday}, seconds={self.seconds})"
+        return f"_DSTRule(posix_rule={self.posix_rule}, month={self.month}, week={self.week}, weekday={self.weekday}, seconds={self.seconds})"
