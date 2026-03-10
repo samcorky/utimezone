@@ -68,8 +68,22 @@ class _DSTRule:
         self.week = int(m.group(2))
         self.weekday = int(m.group(3))
 
+        if not (0 <= self.weekday <= 6):
+            raise ValueError(f"Bad weekday: {self.weekday}")
+        if not (1 <= self.week <= 5):
+            raise ValueError(f"Bad week: {self.week}")
+        if not (1 <= self.month <= 12):
+            raise ValueError(f"Bad month: {self.month}")
+
         time_s = m.group(5)
         self.seconds = 2 * 3600 if time_s is None else self._parse_time_to_seconds(time_s)
+
+    def get_transition(self, year: int) -> int:
+        """"""
+
+
+
+        return transitions
 
     def __repr__(self) -> str:
         return f"_DSTRule(month={self.month}, week={self.week}, weekday={self.weekday}, seconds={self.seconds})"
