@@ -1,6 +1,11 @@
 [project]
 name = "utimezone"
 version = "0.1.0"
-description = "Add your description here"
-requires-python = ">=3.13"
+description = "Micropython Compatible Timezone Helpers"
+requires-python = ">=3.10"
 dependencies = []
+
+[dependency-groups]
+dev = [
+    "pytest>=9.0.2",
+]
