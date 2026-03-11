@@ -62,6 +62,20 @@ def datetime_to_epoch(year: int, month: int, day: int, hour: int, minute: int, s
 
     return days_since_epoch * 86400 + hour * 3600 + minute * 60 + second
 
+def epoch_to_utc_year(epoch_seconds: int) -> int:
+    if epoch_seconds < 0:
+        raise ValueError("Negative epoch values are not supported")
+
+    year = 1970
+    days_remaining = epoch_seconds // 86400
+
+    while True:
+        year_days = 366 if is_leap_year(year) else 365
+        if days_remaining < year_days:
+            return year
+        days_remaining -= year_days
+        year += 1
+
 _TIME_PART_RE = re.compile("^([+-])?([0-9]+)(:([0-9]+)(:([0-9]+))?)?$")
 
 def parse_signed_hms_to_seconds(value: str) -> int:
