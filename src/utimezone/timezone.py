@@ -6,37 +6,60 @@ from .utils import parse_signed_hms_to_seconds
 
 _POSIX_TZ_RE: re.Pattern = re.compile(r"^(<[^>]+>|[A-Za-z]+)([+-]?[0-9]+(:[0-9]+(:[0-9]+)?)?)((<[^>]+>|[A-Za-z]+)([+-]?[0-9]+(:[0-9]+(:[0-9]+)?)?)?)?(,([^,]+),([^,]+))?$")
 
+
 class TimeZone:
+    iana_timezone_name: str | None
+    _posix_timezone_string: str
+
+    _std_offset: int
+    _std_tz_name: str | None
+
+    _has_dst: bool
+    _dst_tz_name: str | None
+    _dst_offset: int | None
+
+    _dst_start_rule: _TransitionRule | None
+    _dst_end_rule: _TransitionRule | None
+
+    _cache_year: int | None
+    _cache_dst_start: int | None
+    _cache_dst_end: int | None
+
     def __init__(self, iana_timezone_name: str) -> None:
-        self.iana_timezone_name: str = iana_timezone_name
+        self._init_state()
+
+        self.iana_timezone_name = iana_timezone_name
         if iana_timezone_name not in IANA_TO_POSIX_MAP:
             raise ValueError(f"Unknown IANA timezone name: {iana_timezone_name}")
 
-        self._posix_timezone_string: str = IANA_TO_POSIX_MAP[iana_timezone_name]
-
-        self._std_offset: int = 0
-        self._std_tz_name: str | None = None
-
-        # DST Stuff
-        self._has_dst: bool = False
-        self._dst_tz_name: str | None = None
-        self._dst_offset: int | None = None
-
-        # Parsed rule (not absolute timestamps)
-        self._dst_start_rule: _TransitionRule | None = None
-        self._dst_end_rule: _TransitionRule | None = None
-
-        # Per-year computed cache (epoch seconds)
-        self._cache_year: int | None = None
-        self._cache_dst_start: int | None = None
-        self._cache_dst_end: int | None = None
-
+        self._posix_timezone_string = IANA_TO_POSIX_MAP[iana_timezone_name]
         self._parse_posix_timezone_string()
 
-    def from_posix_timezone_string(self, posix_timezone_string: str) -> "TimeZone":
-        self._posix_timezone_string = posix_timezone_string
-        self._parse_posix_timezone_string()
-        return self
+    @classmethod
+    def from_posix_timezone_string(cls, posix_timezone_string: str) -> "TimeZone":
+        tz = cls.__new__(cls)
+        tz._init_state()
+        tz._posix_timezone_string = posix_timezone_string
+        tz._parse_posix_timezone_string()
+        return tz
+
+    def _init_state(self) -> None:
+        self.iana_timezone_name = None
+        self._posix_timezone_string = ""
+
+        self._std_offset = 0
+        self._std_tz_name = None
+
+        self._has_dst = False
+        self._dst_tz_name = None
+        self._dst_offset = None
+
+        self._dst_start_rule = None
+        self._dst_end_rule = None
+
+        self._cache_year = None
+        self._cache_dst_start = None
+        self._cache_dst_end = None
 
     def _parse_posix_timezone_string(self) -> None:
         s: str = self._posix_timezone_string.strip()
@@ -46,11 +69,11 @@ class TimeZone:
             raise ValueError(f"Invalid POSIX timezone string: {s}")
 
         std_name = m.group(1)
-        std_off  = m.group(2)
+        std_off = m.group(2)
         dst_name = m.group(6)
-        dst_off  = m.group(7)
-        start    = m.group(11)
-        end      = m.group(12)
+        dst_off = m.group(7)
+        start = m.group(11)
+        end = m.group(12)
 
         # Standard time
         self._std_tz_name = std_name
@@ -61,6 +84,8 @@ class TimeZone:
             self._has_dst = False
             self._dst_tz_name = None
             self._dst_offset = None
+            self._dst_start_rule = None
+            self._dst_end_rule = None
         else:
             self._has_dst = True
             self._dst_tz_name = dst_name
@@ -90,5 +115,6 @@ class TimeZone:
         self._cache_dst_end = self._dst_end_rule.get_transition(year)
 
     def __repr__(self) -> str:
-        return f"<TimeZone {self.iana_timezone_name}>"
-
+        if self.iana_timezone_name is not None:
+            return f"<TimeZone {self.iana_timezone_name}>"
+        return f"<TimeZone {self._posix_timezone_string}>"
