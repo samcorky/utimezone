@@ -2,7 +2,7 @@ import re
 
 from .transition_rule import _TransitionRule
 from .db import IANA_TO_POSIX_MAP
-from .utils import parse_signed_hms_to_seconds
+from .utils import datetime_to_epoch, epoch_to_utc_year, parse_signed_hms_to_seconds
 
 _POSIX_TZ_RE: re.Pattern = re.compile(r"^(<[^>]+>|[A-Za-z]+)([+-]?[0-9]+(:[0-9]+(:[0-9]+)?)?)((<[^>]+>|[A-Za-z]+)([+-]?[0-9]+(:[0-9]+(:[0-9]+)?)?)?)?(,([^,]+),([^,]+))?$")
 
@@ -113,6 +113,63 @@ class TimeZone:
         self._cache_year = year
         self._cache_dst_start = self._dst_start_rule.get_transition(year)
         self._cache_dst_end = self._dst_end_rule.get_transition(year)
+
+    def is_dst(self, epoch_seconds: int) -> bool:
+        if not self._has_dst:
+            return False
+
+        year = epoch_to_utc_year(epoch_seconds)
+        self._ensure_cache(year)
+
+        if self._cache_dst_start is None or self._cache_dst_end is None:
+            return False
+
+        # Northern hemisphere style: DST starts and ends within the same calendar year.
+        if self._cache_dst_start < self._cache_dst_end:
+            return self._cache_dst_start <= epoch_seconds < self._cache_dst_end
+
+        # Southern hemisphere style: DST season crosses the new year boundary.
+        return epoch_seconds >= self._cache_dst_start or epoch_seconds < self._cache_dst_end
+
+    def is_dst_at(
+        self,
+        year: int,
+        month: int,
+        day: int,
+        hour: int = 0,
+        minute: int = 0,
+        second: int = 0,
+    ) -> bool:
+        epoch_seconds = datetime_to_epoch(year, month, day, hour, minute, second)
+        return self.is_dst(epoch_seconds)
+
+    def offset_at(
+        self,
+        year: int,
+        month: int,
+        day: int,
+        hour: int = 0,
+        minute: int = 0,
+        second: int = 0,
+    ) -> int:
+        if self.is_dst_at(year, month, day, hour, minute, second):
+            if self._dst_offset is None:
+                raise ValueError("DST offset missing for DST-aware timezone")
+            return self._dst_offset
+        return self._std_offset
+
+    def name_at(
+        self,
+        year: int,
+        month: int,
+        day: int,
+        hour: int = 0,
+        minute: int = 0,
+        second: int = 0,
+    ) -> str | None:
+        if self.is_dst_at(year, month, day, hour, minute, second):
+            return self._dst_tz_name
+        return self._std_tz_name
 
     def __repr__(self) -> str:
         if self.iana_timezone_name is not None:
