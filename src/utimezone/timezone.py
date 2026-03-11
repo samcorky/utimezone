@@ -1,6 +1,6 @@
 import re
 
-from .dst_rule import _TransitionRule
+from .transition_rule import _TransitionRule
 from .db import IANA_TO_POSIX_MAP
 from .utils import parse_signed_hms_to_seconds
 
