@@ -5,7 +5,16 @@ def is_leap_year(year: int) -> bool:
     return year % 4 == 0 and (year % 100 != 0 or year % 400 == 0)
 
 def days_in_month(year: int, month: int) -> int:
-    return 28 + int(is_leap_year(year)) if month == 2 else 31 - month % 7 % 2
+    if not 1 <= month <= 12:
+        raise ValueError(f"Bad month: {month}")
+
+    if month == 2:
+        return 29 if is_leap_year(year) else 28
+
+    if month in (4, 6, 9, 11):
+        return 30
+
+    return 31
 
 def is_valid_date(year: int, month: int, day: int) -> bool:
     return 1 <= month <= 12 and 1 <= day <= days_in_month(year, month)
