@@ -1,6 +1,6 @@
 import re  # type: ignore
 
-from .utils import day_of_week, days_in_month, datetime_to_epoch
+from .utils import day_of_week, days_in_month, datetime_to_epoch, parse_signed_hms_to_seconds
 
 
 class _TransitionRule:
@@ -30,32 +30,6 @@ class _TransitionRule:
         self.transition_offset_seconds = transition_offset_seconds
         self._parse_posix_rule()
 
-    @staticmethod
-    def _parse_time_to_seconds(t: str) -> int:
-        """
-        Parse POSIX rule time (after '/') into seconds.
-        Accepts: HH, HH:MM, HH:MM:SS with optional leading +/-.
-        """
-        t = t.strip()
-        if not t:
-            raise ValueError(f"Empty rule time")
-
-        m = re.match("^([+-])?([0-9]+)(:([0-9]+)(:([0-9]+))?)?$", t)
-        if m is None:
-            raise ValueError(f"Bad rule time: {t!r}")
-
-        sign_s = m.group(1)
-        sign = -1 if sign_s == "-" else 1
-
-        h = int(m.group(2))
-        mm = int(m.group(4) or "0")
-        ss = int(m.group(6) or "0")
-
-        if mm >= 60 or ss >= 60:
-            raise ValueError(f"Bad rule time (minute/second out of range): {t!r}")
-
-        return sign * (h * 3600 + mm * 60 + ss)
-
     def _parse_posix_rule(self) -> None:
         """
         Currently supports the 'M' rule form used in your db:
@@ -80,7 +54,7 @@ class _TransitionRule:
             raise ValueError(f"Bad month: {self.month}")
 
         time_s = m.group(5)
-        self.seconds = 2 * 3600 if time_s is None else self._parse_time_to_seconds(time_s)
+        self.seconds = 2 * 3600 if time_s is None else parse_signed_hms_to_seconds(time_s)
 
     def _resolve_day_of_month(self, year: int) -> int:
         first_weekday = day_of_week(year, self.month, 1)

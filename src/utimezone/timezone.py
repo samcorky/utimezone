@@ -2,6 +2,7 @@ import re
 
 from .dst_rule import _TransitionRule
 from .db import IANA_TO_POSIX_MAP
+from .utils import parse_signed_hms_to_seconds
 
 _POSIX_TZ_RE: re.Pattern = re.compile(r"^(<[^>]+>|[A-Za-z]+)([+-]?[0-9]+(:[0-9]+(:[0-9]+)?)?)((<[^>]+>|[A-Za-z]+)([+-]?[0-9]+(:[0-9]+(:[0-9]+)?)?)?)?(,([^,]+),([^,]+))?$")
 
@@ -48,7 +49,7 @@ class TimeZone:
 
         # Standard time
         self._std_tz_name = std_name
-        self._std_offset = -self._offset_str_to_posix_seconds(std_off)
+        self._std_offset = -parse_signed_hms_to_seconds(std_off)
 
         # DST (if present)
         if dst_name is None:
@@ -61,7 +62,7 @@ class TimeZone:
             if dst_off is None:
                 self._dst_offset = self._std_offset + 3600
             else:
-                self._dst_offset = -self._offset_str_to_posix_seconds(dst_off)
+                self._dst_offset = -parse_signed_hms_to_seconds(dst_off)
 
             self._dst_start_rule = _TransitionRule(start, self._std_offset) if start is not None else None
             self._dst_end_rule = _TransitionRule(end, self._dst_offset) if end is not None else None
@@ -82,41 +83,6 @@ class TimeZone:
         self._cache_year = year
         self._cache_dst_start = self._dst_start_rule.get_transition(year)
         self._cache_dst_end = self._dst_end_rule.get_transition(year)
-
-    @staticmethod
-    def _offset_str_to_posix_seconds(off: str) -> int:
-        """
-        Convert a POSIX offset string into seconds (POSIX sign convention).
-
-        Supports:
-          HH
-          HH:MM
-          HH:MM:SS
-        with optional leading +/-
-        """
-        if off is None:
-            raise ValueError("Offset must be a string, not None")
-
-        off = off.strip()
-        if not off:
-            raise ValueError("Offset must not be empty")
-
-        # MicroPython-friendly: no {m,n}, no non-capturing groups.
-        m = re.match("^([+-])?([0-9]+)(:([0-9]+)(:([0-9]+))?)?$", off)
-        if m is None:
-            raise ValueError(f"Bad offset: {off!r}")
-
-        sign_s = m.group(1)
-        sign = -1 if sign_s == "-" else 1
-
-        h = int(m.group(2))
-        mm = int(m.group(4) or "0")
-        ss = int(m.group(6) or "0")
-
-        if mm < 0 or mm >= 60 or ss < 0 or ss >= 60:
-            raise ValueError(f"Bad offset (minute/second out of range): {off!r}")
-
-        return sign * (h * 3600 + mm * 60 + ss)
 
     def __repr__(self) -> str:
         return f"<TimeZone {self.iana_timezone_name}>"

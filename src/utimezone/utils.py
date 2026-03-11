@@ -1,3 +1,6 @@
+import re
+
+
 def is_leap_year(year: int) -> bool:
     return year % 4 == 0 and (year % 100 != 0 or year % 400 == 0)
 
@@ -39,3 +42,29 @@ def datetime_to_epoch(year: int, month: int, day: int, hour: int, minute: int, s
     days_since_epoch = era * 146097 + doe - 719468
 
     return days_since_epoch * 86400 + hour * 3600 + minute * 60 + second
+
+_TIME_PART_RE = re.compile("^([+-])?([0-9]+)(:([0-9]+)(:([0-9]+))?)?$")
+
+def parse_signed_hms_to_seconds(value: str) -> int:
+    if value is None:
+        raise ValueError("Value must be a string, not None")
+
+    value = value.strip()
+    if not value:
+        raise ValueError("Value must not be empty")
+
+    m = _TIME_PART_RE.match(value)
+    if m is None:
+        raise ValueError(f"Bad time value: {value!r}")
+
+    sign_s = m.group(1)
+    sign = -1 if sign_s == "-" else 1
+
+    h = int(m.group(2))
+    mm = int(m.group(4) or "0")
+    ss = int(m.group(6) or "0")
+
+    if mm >= 60 or ss >= 60:
+        raise ValueError(f"Bad time value (minute/second out of range): {value!r}")
+
+    return sign * (h * 3600 + mm * 60 + ss)
