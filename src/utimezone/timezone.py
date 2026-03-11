@@ -33,6 +33,11 @@ class TimeZone:
 
         self._parse_posix_timezone_string()
 
+    def from_posix_timezone_string(self, posix_timezone_string: str) -> "TimeZone":
+        self._posix_timezone_string = posix_timezone_string
+        self._parse_posix_timezone_string()
+        return self
+
     def _parse_posix_timezone_string(self) -> None:
         s: str = self._posix_timezone_string.strip()
 

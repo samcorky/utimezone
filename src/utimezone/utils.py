@@ -27,6 +27,16 @@ def day_of_week(year: int, month: int, day: int) -> int:
     # Zeller's returns 0=Saturday … 6=Friday, convert to Sunday=0
     return (h + 6) % 7
 
+def day_of_year_to_month_day(year: int, day_of_year: int) -> tuple[int, int]:
+    month = 1
+
+    while True:
+        month_days = days_in_month(year, month)
+        if day_of_year <= month_days:
+            return month, day_of_year
+        day_of_year -= month_days
+        month += 1
+
 def datetime_to_epoch(year: int, month: int, day: int, hour: int, minute: int, second: int) -> int:
     y = year
     m = month

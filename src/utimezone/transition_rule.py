@@ -1,17 +1,32 @@
 import re  # type: ignore
 
-from .utils import day_of_week, days_in_month, datetime_to_epoch, parse_signed_hms_to_seconds
+from .utils import (
+    day_of_week,
+    day_of_year_to_month_day,
+    datetime_to_epoch,
+    days_in_month,
+    is_leap_year,
+    parse_signed_hms_to_seconds,
+)
 
 
 class _TransitionRule:
     """
-    Compact, MicroPython-friendly representation of a POSIX TZ 'Mm.w.d[/time]' rule.
+    Compact, MicroPython-friendly representation of a POSIX TZ rule.
+
+    Supported forms:
+      Mm.w.d[/time]
+      Jn[/time]
+      n[/time]
 
     Stored fields:
-      month: 1..12
-      week:  1..5 (5 means "last")
-      weekday: 0..6 (0=Sunday)
-      seconds: transition time in seconds from 00:00 (can be negative or >86400)
+      rule_type: "M", "J", or "N"
+      month: 1..12                 (for M rules)
+      week:  1..5 (5 means "last") (for M rules)
+      weekday: 0..6 (0=Sunday)     (for M rules)
+      day: day number              (for J / n rules)
+      seconds: transition time in seconds from 00:00
+               (can be negative or >86400)
     """
 
     def __init__(self, posix_rule: str, transition_offset_seconds: int = 0) -> None:
@@ -22,9 +37,11 @@ class _TransitionRule:
         if not self.posix_rule:
             raise ValueError("posix_rule must not be empty")
 
+        self.rule_type: str = ""
         self.month: int = 0
         self.week: int = 0
         self.weekday: int = 0
+        self.day: int = 0
         self.seconds: int = 0
 
         self.transition_offset_seconds = transition_offset_seconds
@@ -32,16 +49,31 @@ class _TransitionRule:
 
     def _parse_posix_rule(self) -> None:
         """
-        Currently supports the 'M' rule form used in your db:
+        Supports POSIX rule forms:
           Mm.w.d[/time]
+          Jn[/time]
+          n[/time]
+
         If /time omitted, POSIX default is 02:00.
         """
         rule = self.posix_rule
 
+        if rule.startswith("M"):
+            self._parse_month_week_day_rule(rule)
+            return
+
+        if rule.startswith("J"):
+            self._parse_julian_rule(rule)
+            return
+
+        self._parse_day_of_year_rule(rule)
+
+    def _parse_month_week_day_rule(self, rule: str) -> None:
         m = re.match("^M([0-9]+)\\.([0-9]+)\\.([0-9]+)(/(.+))?$", rule)
         if m is None:
             raise ValueError(f"Unsupported DST rule: {rule!r}")
 
+        self.rule_type = "M"
         self.month = int(m.group(1))
         self.week = int(m.group(2))
         self.weekday = int(m.group(3))
@@ -53,22 +85,74 @@ class _TransitionRule:
         if not (1 <= self.month <= 12):
             raise ValueError(f"Bad month: {self.month}")
 
-        time_s = m.group(5)
-        self.seconds = 2 * 3600 if time_s is None else parse_signed_hms_to_seconds(time_s)
+        self.seconds = self._parse_rule_time(m.group(5))
 
-    def _resolve_day_of_month(self, year: int) -> int:
+    def _parse_julian_rule(self, rule: str) -> None:
+        m = re.match("^J([0-9]+)(/(.+))?$", rule)
+        if m is None:
+            raise ValueError(f"Unsupported DST rule: {rule!r}")
+
+        self.rule_type = "J"
+        self.day = int(m.group(1))
+
+        if not (1 <= self.day <= 365):
+            raise ValueError(f"Bad Julian day: {self.day}")
+
+        self.seconds = self._parse_rule_time(m.group(3))
+
+    def _parse_day_of_year_rule(self, rule: str) -> None:
+        m = re.match("^([0-9]+)(/(.+))?$", rule)
+        if m is None:
+            raise ValueError(f"Unsupported DST rule: {rule!r}")
+
+        self.rule_type = "N"
+        self.day = int(m.group(1))
+
+        if not (0 <= self.day <= 365):
+            raise ValueError(f"Bad day-of-year: {self.day}")
+
+        self.seconds = self._parse_rule_time(m.group(3))
+
+    @staticmethod
+    def _parse_rule_time(time_s: str | None) -> int:
+        return 2 * 3600 if time_s is None else parse_signed_hms_to_seconds(time_s)
+
+    def _resolve_month_week_day_rule(self, year: int) -> tuple[int, int]:
         first_weekday = day_of_week(year, self.month, 1)
         days_total = days_in_month(year, self.month)
 
         first_match = 1 + (self.weekday - first_weekday) % 7
 
         if self.week < 5:
-            return first_match + (self.week - 1) * 7
+            return self.month, first_match + (self.week - 1) * 7
 
         candidate = first_match + 28
         if candidate <= days_total:
-            return candidate
-        return candidate - 7
+            return self.month, candidate
+        return self.month, candidate - 7
+
+    def _resolve_julian_rule(self, year: int) -> tuple[int, int]:
+        day_of_year = self.day
+
+        if is_leap_year(year) and day_of_year >= 60:
+            day_of_year += 1
+
+        return day_of_year_to_month_day(year, day_of_year)
+
+    def _resolve_day_of_year_rule(self, year: int) -> tuple[int, int]:
+        return day_of_year_to_month_day(year, self.day + 1)
+
+    def _resolve_month_day(self, year: int) -> tuple[int, int]:
+        if self.rule_type == "M":
+            return self._resolve_month_week_day_rule(year)
+
+        if self.rule_type == "J":
+            return self._resolve_julian_rule(year)
+
+        if self.rule_type == "N":
+            return self._resolve_day_of_year_rule(year)
+
+        raise ValueError(f"Unsupported rule type: {self.rule_type}")
 
     # TODO - Can this be moved out to utils and improved?
     @staticmethod
@@ -92,7 +176,7 @@ class _TransitionRule:
         return year, month, day
 
     def get_transition(self, year: int) -> int:
-        day = self._resolve_day_of_month(year)
+        month, day = self._resolve_month_day(year)
 
         day_shift = self.seconds // 86400
         second_of_day = self.seconds % 86400
@@ -101,10 +185,14 @@ class _TransitionRule:
         minute = (second_of_day % 3600) // 60
         second = second_of_day % 60
 
-        trans_year, trans_month, trans_day = self._shift_date(year, self.month, day, day_shift)
+        trans_year, trans_month, trans_day = self._shift_date(year, month, day, day_shift)
 
         naive_epoch = datetime_to_epoch(trans_year, trans_month, trans_day, hour, minute, second)
         return int(naive_epoch) - self.transition_offset_seconds
 
     def __repr__(self) -> str:
-        return f"_TransitionRule(posix_rule={self.posix_rule}, month={self.month}, week={self.week}, weekday={self.weekday}, seconds={self.seconds})"
+        return (
+            f"_TransitionRule(posix_rule={self.posix_rule}, rule_type={self.rule_type}, "
+            f"month={self.month}, week={self.week}, weekday={self.weekday}, "
+            f"day={self.day}, seconds={self.seconds})"
+        )
