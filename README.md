@@ -38,6 +38,16 @@ If you are using this on standard Python for testing or simulation:
 pip install .
 ```
 
+### Testing the Installation (MicroPython)
+
+You can verify the installation using the MicroPython Unix port (via Docker) with this one-liner:
+
+```bash
+docker run --rm -it micropython/unix sh -c "\
+  micropython -m mip install github:samcorky/utimezone@develop --no-mpy && \
+  micropython -c 'from utimezone import TimeZone; print(TimeZone(\"Europe/London\"))'"
+```
+
 ## Quick Start
 
 The API is designed to be familiar yet lightweight, primarily using epoch seconds (UTC) and date/time tuples `(y, m, d, h, mi, s)`.

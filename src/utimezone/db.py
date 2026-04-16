@@ -1,4 +1,3 @@
-import os
 
 _CACHE = {}
 _MAX_CACHE_SIZE = 10
@@ -6,13 +5,16 @@ _MAX_CACHE_SIZE = 10
 
 def _zones_csv_path():
     try:
-        # noinspection PyUnresolvedReferences
+        # Standard Python approach
         import os
-        base = os.path.abspath(os.path.dirname(__file__))
-        return os.path.join(base, "zones.csv")
-    except ImportError:
-        # MicroPython fallback
-        return "utimezone/zones.csv"
+        if hasattr(os, "path"):
+            base = os.path.dirname(os.path.abspath(__file__))
+            return os.path.join(base, "zones.csv")
+    except (ImportError, AttributeError, NameError):
+        pass
+
+    # MicroPython fallback
+    return "utimezone/zones.csv"
 
 
 def _evict_if_needed():
@@ -53,12 +55,13 @@ def get_posix_rule_for_iana_name(iana_timezone_name):
 
     db_path = _zones_csv_path()
     
-    # Try to verify path existence if 'os' is available
+    # Try to verify path existence if 'os.path' is available
     try:
         import os
-        if not os.path.exists(db_path):
-            return None
-    except ImportError:
+        if hasattr(os, "path") and hasattr(os.path, "exists"):
+            if not os.path.exists(db_path):
+                return None
+    except (ImportError, AttributeError):
         pass
 
     # noinspection PyBroadException
@@ -78,8 +81,15 @@ def _get_all_iana_names():
     """Return a list of all IANA names known in zones.csv."""
     db_path = _zones_csv_path()
     names = []
-    if not os.path.exists(db_path):
-        return names
+
+    # Try to verify path existence if 'os.path' is available
+    try:
+        import os
+        if hasattr(os, "path") and hasattr(os.path, "exists"):
+            if not os.path.exists(db_path):
+                return names
+    except (ImportError, AttributeError):
+        pass
 
     # noinspection PyBroadException
     try:
