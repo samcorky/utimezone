@@ -4,6 +4,7 @@ import re
 def is_leap_year(year: int) -> bool:
     return year % 4 == 0 and (year % 100 != 0 or year % 400 == 0)
 
+
 def days_in_month(year: int, month: int) -> int:
     if not 1 <= month <= 12:
         raise ValueError(f"Bad month: {month}")
@@ -16,8 +17,10 @@ def days_in_month(year: int, month: int) -> int:
 
     return 31
 
+
 def is_valid_date(year: int, month: int, day: int) -> bool:
     return 1 <= month <= 12 and 1 <= day <= days_in_month(year, month)
+
 
 def day_of_week(year: int, month: int, day: int) -> int:
     """
@@ -31,10 +34,11 @@ def day_of_week(year: int, month: int, day: int) -> int:
     k = year % 100
     j = year // 100
 
-    h = (day + (13*(month+1)) // 5 + k + k // 4 + j // 4 + 5 * j) % 7
+    h = (day + (13 * (month + 1)) // 5 + k + k // 4 + j // 4 + 5 * j) % 7
 
     # Zeller's returns 0=Saturday … 6=Friday, convert to Sunday=0
     return (h + 6) % 7
+
 
 def day_of_year_to_month_day(year: int, day_of_year: int) -> tuple[int, int]:
     month = 1
@@ -46,7 +50,10 @@ def day_of_year_to_month_day(year: int, day_of_year: int) -> tuple[int, int]:
         day_of_year -= month_days
         month += 1
 
-def datetime_to_epoch(year: int, month: int, day: int, hour: int, minute: int, second: int) -> int:
+
+def datetime_to_epoch(
+    year: int, month: int, day: int, hour: int, minute: int, second: int
+) -> int:
     y = year
     m = month
 
@@ -62,6 +69,7 @@ def datetime_to_epoch(year: int, month: int, day: int, hour: int, minute: int, s
 
     return days_since_epoch * 86400 + hour * 3600 + minute * 60 + second
 
+
 def epoch_to_utc_year(epoch_seconds: int) -> int:
     if epoch_seconds < 0:
         raise ValueError("Negative epoch values are not supported")
@@ -76,7 +84,9 @@ def epoch_to_utc_year(epoch_seconds: int) -> int:
         days_remaining -= year_days
         year += 1
 
+
 _TIME_PART_RE = re.compile("^([+-])?([0-9]+)(:([0-9]+)(:([0-9]+))?)?$")
+
 
 def parse_signed_hms_to_seconds(value: str) -> int:
     if value is None:

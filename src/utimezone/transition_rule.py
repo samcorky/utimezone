@@ -1,9 +1,9 @@
 import re  # type: ignore
 
 from .utils import (
+    datetime_to_epoch,
     day_of_week,
     day_of_year_to_month_day,
-    datetime_to_epoch,
     days_in_month,
     is_leap_year,
     parse_signed_hms_to_seconds,
@@ -156,7 +156,9 @@ class _TransitionRule:
 
     # TODO - Can this be moved out to utils and improved?
     @staticmethod
-    def _shift_date(year: int, month: int, day: int, day_shift: int) -> tuple[int, int, int]:
+    def _shift_date(
+        year: int, month: int, day: int, day_shift: int
+    ) -> tuple[int, int, int]:
         day += day_shift
 
         while day < 1:
@@ -185,14 +187,19 @@ class _TransitionRule:
         minute = (second_of_day % 3600) // 60
         second = second_of_day % 60
 
-        trans_year, trans_month, trans_day = self._shift_date(year, month, day, day_shift)
+        trans_year, trans_month, trans_day = self._shift_date(
+            year, month, day, day_shift
+        )
 
-        naive_epoch = datetime_to_epoch(trans_year, trans_month, trans_day, hour, minute, second)
+        naive_epoch = datetime_to_epoch(
+            trans_year, trans_month, trans_day, hour, minute, second
+        )
         return int(naive_epoch) - self.transition_offset_seconds
 
     def __repr__(self) -> str:
         return (
-            f"_TransitionRule(posix_rule={self.posix_rule}, rule_type={self.rule_type}, "
+            f"_TransitionRule(posix_rule={self.posix_rule}, "
+            f"rule_type={self.rule_type}, "
             f"month={self.month}, week={self.week}, weekday={self.weekday}, "
             f"day={self.day}, seconds={self.seconds})"
         )

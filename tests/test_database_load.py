@@ -1,7 +1,8 @@
 import pytest
 
-from utimezone.timezone import TimeZone
 from utimezone.db import IANA_TO_POSIX_MAP
+from utimezone.timezone import TimeZone
+
 
 @pytest.mark.parametrize("iana_name", IANA_TO_POSIX_MAP.keys())
 def test_valid_iana_names(iana_name: str) -> None:

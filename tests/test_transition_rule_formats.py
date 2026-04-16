@@ -4,7 +4,15 @@ from utimezone.transition_rule import _TransitionRule
 
 
 @pytest.mark.parametrize(
-    ("rule", "expected_type", "expected_month", "expected_week", "expected_weekday", "expected_day", "expected_seconds"),
+    (
+        "rule",
+        "expected_type",
+        "expected_month",
+        "expected_week",
+        "expected_weekday",
+        "expected_day",
+        "expected_seconds",
+    ),
     [
         ("M3.2.0", "M", 3, 2, 0, 0, 2 * 3600),
         ("M10.5.0/3", "M", 10, 5, 0, 0, 3 * 3600),
@@ -84,7 +92,9 @@ def test_transition_rule_rejects_invalid_rules(rule: str) -> None:
         ("364", 2024, 12, 30),
     ],
 )
-def test_resolve_month_day(rule: str, year: int, expected_month: int, expected_day: int) -> None:
+def test_resolve_month_day(
+    rule: str, year: int, expected_month: int, expected_day: int
+) -> None:
     """Ensure parsed rules resolve to the expected calendar date for a given year."""
     transition_rule = _TransitionRule(rule)
 

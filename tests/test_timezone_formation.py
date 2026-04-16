@@ -71,7 +71,9 @@ def test_from_posix_timezone_string_uses_default_dst_offset_when_omitted() -> No
 
 def test_from_posix_timezone_string_accepts_bracketed_names_and_weird_times() -> None:
     """Ensure bracketed names and unusual transition times are preserved correctly."""
-    timezone = TimeZone.from_posix_timezone_string("<+0330>-3:30<+0430>,M3.5.4/-1,M10.5.4/24")
+    timezone = TimeZone.from_posix_timezone_string(
+        "<+0330>-3:30<+0430>,M3.5.4/-1,M10.5.4/24"
+    )
 
     assert timezone._std_tz_name == "<+0330>"
     assert timezone._std_offset == 3 * 3600 + 30 * 60
@@ -167,7 +169,9 @@ def test_ensure_cache_for_dst_timezone_populates_transition_cache() -> None:
 
 def test_ensure_cache_for_custom_funky_timezone_populates_transition_cache() -> None:
     """Ensure custom POSIX-created DST zones also compute transition caches."""
-    timezone = TimeZone.from_posix_timezone_string("<+0330>-3:30<+0430>,M3.5.4/-1,M10.5.4/24")
+    timezone = TimeZone.from_posix_timezone_string(
+        "<+0330>-3:30<+0430>,M3.5.4/-1,M10.5.4/24"
+    )
 
     timezone._ensure_cache(2026)
 
@@ -205,7 +209,7 @@ def test_is_dst_at_works_for_southern_hemisphere_zone() -> None:
 
 
 def test_offset_and_name_at_works_for_southern_hemisphere_zone() -> None:
-    """Ensure offset and abbreviation also switch correctly for southern hemisphere DST."""
+    """Ensure offset and abbreviation switch correctly for southern hemisphere DST."""
     timezone = TimeZone("Pacific/Auckland")
 
     assert timezone.offset_at(2026, 1, 15, 12, 0, 0) == 13 * 3600

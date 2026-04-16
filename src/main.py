@@ -2,7 +2,13 @@ import time
 
 from utimezone.timezone import TimeZone
 
-timezones = [TimeZone('Europe/London'), TimeZone('Africa/Bamako'), TimeZone('America/Miquelon'), TimeZone('Asia/Oral'), TimeZone("Pacific/Auckland")]
+timezones = [
+    TimeZone("Europe/London"),
+    TimeZone("Africa/Bamako"),
+    TimeZone("America/Miquelon"),
+    TimeZone("Asia/Oral"),
+    TimeZone("Pacific/Auckland"),
+]
 for timezone in timezones:
     timezone._ensure_cache(2026)
     print(timezone)

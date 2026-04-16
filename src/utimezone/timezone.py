@@ -1,10 +1,12 @@
 import re
 
-from .transition_rule import _TransitionRule
 from .db import IANA_TO_POSIX_MAP
+from .transition_rule import _TransitionRule
 from .utils import datetime_to_epoch, epoch_to_utc_year, parse_signed_hms_to_seconds
 
-_POSIX_TZ_RE: re.Pattern = re.compile(r"^(<[^>]+>|[A-Za-z]+)([+-]?[0-9]+(:[0-9]+(:[0-9]+)?)?)((<[^>]+>|[A-Za-z]+)([+-]?[0-9]+(:[0-9]+(:[0-9]+)?)?)?)?(,([^,]+),([^,]+))?$")
+_POSIX_TZ_RE: re.Pattern = re.compile(
+    r"^(<[^>]+>|[A-Za-z]+)([+-]?[0-9]+(:[0-9]+(:[0-9]+)?)?)((<[^>]+>|[A-Za-z]+)([+-]?[0-9]+(:[0-9]+(:[0-9]+)?)?)?)?(,([^,]+),([^,]+))?$"
+)
 
 
 class TimeZone:
@@ -94,8 +96,12 @@ class TimeZone:
             else:
                 self._dst_offset = -parse_signed_hms_to_seconds(dst_off)
 
-            self._dst_start_rule = _TransitionRule(start, self._std_offset) if start is not None else None
-            self._dst_end_rule = _TransitionRule(end, self._dst_offset) if end is not None else None
+            self._dst_start_rule = (
+                _TransitionRule(start, self._std_offset) if start is not None else None
+            )
+            self._dst_end_rule = (
+                _TransitionRule(end, self._dst_offset) if end is not None else None
+            )
 
     def _ensure_cache(self, year: int) -> None:
         if not self._has_dst:
@@ -108,7 +114,9 @@ class TimeZone:
             return
 
         if self._dst_start_rule is None or self._dst_end_rule is None:
-            raise ValueError(f"Incomplete DST rules for timezone: {self.iana_timezone_name}")
+            raise ValueError(
+                f"Incomplete DST rules for timezone: {self.iana_timezone_name}"
+            )
 
         self._cache_year = year
         self._cache_dst_start = self._dst_start_rule.get_transition(year)
@@ -129,7 +137,10 @@ class TimeZone:
             return self._cache_dst_start <= epoch_seconds < self._cache_dst_end
 
         # Southern hemisphere style: DST season crosses the new year boundary.
-        return epoch_seconds >= self._cache_dst_start or epoch_seconds < self._cache_dst_end
+        return (
+            epoch_seconds >= self._cache_dst_start
+            or epoch_seconds < self._cache_dst_end
+        )
 
     def is_dst_at(
         self,
