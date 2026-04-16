@@ -1,6 +1,5 @@
 import re
 
-from .db import IANA_TO_POSIX_MAP
 from .transition_rule import _TransitionRule
 from .utils import (
     datetime_to_epoch,
@@ -53,11 +52,17 @@ class TimeZone:
         """
         self._init_state()
 
+        from . import db
+
         self.iana_timezone_name = iana_timezone_name
-        if iana_timezone_name not in IANA_TO_POSIX_MAP:
+        posix_rule = db.get_posix_rule_for_iana_name(iana_timezone_name)
+        if posix_rule is None:
             raise ValueError(f"Unknown IANA timezone name: {iana_timezone_name}")
 
-        self._posix_timezone_string = IANA_TO_POSIX_MAP[iana_timezone_name]
+        self._posix_timezone_string = posix_rule
+        del posix_rule
+        del db
+
         self._parse_posix_timezone_string()
 
     # Public API uses tuple-based datetime inputs for MicroPython compatibility.

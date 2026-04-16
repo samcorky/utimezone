@@ -461,3 +461,5 @@ IANA_TO_POSIX_MAP = {
     "Pacific/Wake": "<+12>-12",
     "Pacific/Wallis": "<+12>-12",
 }
+def get_posix_rule_for_iana_name(iana_timezone_name: str) -> str | None:
+    return IANA_TO_POSIX_MAP.get(iana_timezone_name)
