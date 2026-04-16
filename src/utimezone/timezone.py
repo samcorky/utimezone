@@ -5,8 +5,8 @@ from .transition_rule import _TransitionRule
 from .utils import (
     datetime_to_epoch,
     epoch_to_utc_year,
-    parse_signed_hms_to_seconds,
     epoch_to_ymdhms,
+    parse_signed_hms_to_seconds,
 )
 
 _POSIX_TZ_RE: re.Pattern = re.compile(
@@ -196,7 +196,9 @@ class TimeZone:
         """Return the active timezone abbreviation for the given UTC epoch seconds."""
         return self._dst_tz_name if self.is_dst(epoch_seconds) else self._std_tz_name
 
-    def utc_epoch_to_local(self, epoch_seconds: int) -> tuple[int, int, int, int, int, int]:
+    def utc_epoch_to_local(
+        self, epoch_seconds: int
+    ) -> tuple[int, int, int, int, int, int]:
         """Convert a UTC epoch to local (year, month, day, hour, minute, second).
 
         The returned components are in local time (UTC + offset_for_epoch).
@@ -243,7 +245,11 @@ class TimeZone:
                     valid.append(c)
             else:
                 # candidate maps to dst offset
-                if self._has_dst and self._dst_offset is not None and c == int(naive_epoch) - self._dst_offset:
+                if (
+                    self._has_dst
+                    and self._dst_offset is not None
+                    and c == int(naive_epoch) - self._dst_offset
+                ):
                     valid.append(c)
 
         if len(valid) == 1:

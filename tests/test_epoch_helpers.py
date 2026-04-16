@@ -1,7 +1,7 @@
 import pytest
 
-from utimezone.utils import datetime_to_epoch, epoch_to_ymdhms
 from utimezone.timezone import TimeZone
+from utimezone.utils import datetime_to_epoch, epoch_to_ymdhms
 
 
 @pytest.mark.parametrize(
@@ -36,7 +36,9 @@ def test_utc_epoch_to_local_and_name_and_offset_for_fixed_zone(tz_kolkata):
     assert tz.offset_for_epoch(epoch) == 5 * 3600 + 30 * 60
 
 
-def test_utc_epoch_to_local_and_name_and_offset_for_dst_zone(tz_london, epoch_2026_jan15_noon, epoch_2026_jun15_noon):
+def test_utc_epoch_to_local_and_name_and_offset_for_dst_zone(
+    tz_london, epoch_2026_jan15_noon, epoch_2026_jun15_noon
+):
     tz = tz_london
 
     epoch_winter = epoch_2026_jan15_noon
@@ -96,5 +98,3 @@ def test_from_posix_timezone_string_roundtrip(tz_factory, epoch_2026_jun15_noon)
     local = tz.utc_epoch_to_local(epoch)
     epoch_back = tz.local_to_utc_epoch(*local)
     assert epoch_back == epoch
-
-

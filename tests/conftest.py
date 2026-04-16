@@ -1,7 +1,7 @@
 import pytest
 
-from utimezone.utils import datetime_to_epoch
 from utimezone.timezone import TimeZone
+from utimezone.utils import datetime_to_epoch
 
 
 @pytest.fixture(scope="session")
@@ -78,4 +78,3 @@ def epoch_2026_jan15_noon() -> int:
 @pytest.fixture(scope="session")
 def epoch_2026_jun15_noon() -> int:
     return datetime_to_epoch(2026, 6, 15, 12, 0, 0)
-

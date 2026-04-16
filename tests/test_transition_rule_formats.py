@@ -2,9 +2,9 @@ import pytest
 
 from utimezone.transition_rule import _TransitionRule
 from utimezone.utils import (
-    parse_signed_hms_to_seconds,
     datetime_to_epoch,
     epoch_to_utc_year,
+    parse_signed_hms_to_seconds,
 )
 
 
@@ -162,4 +162,3 @@ def test_shift_date_year_boundaries() -> None:
 def test_epoch_to_utc_year_negative_raises() -> None:
     with pytest.raises(ValueError):
         epoch_to_utc_year(-1)
-

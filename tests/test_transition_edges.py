@@ -1,7 +1,6 @@
 from datetime import datetime, timedelta
 
 from utimezone.utils import datetime_to_epoch
-from utimezone.timezone import TimeZone
 
 
 def test_dst_start_skipped_local_time_europe_london(tz_london):
@@ -24,8 +23,14 @@ def test_dst_start_skipped_local_time_europe_london(tz_london):
 
     # Pick a local time inside the gap (halfway)
     dt_gap_local = dt_before + gap // 2
-    gap_local_tuple = (dt_gap_local.year, dt_gap_local.month, dt_gap_local.day,
-                       dt_gap_local.hour, dt_gap_local.minute, dt_gap_local.second)
+    gap_local_tuple = (
+        dt_gap_local.year,
+        dt_gap_local.month,
+        dt_gap_local.day,
+        dt_gap_local.hour,
+        dt_gap_local.minute,
+        dt_gap_local.second,
+    )
 
     naive_epoch = datetime_to_epoch(*gap_local_tuple)
 
@@ -68,7 +73,8 @@ def test_dst_end_ambiguous_local_time_europe_london(tz_london):
     dt_after = datetime(*local_after)
     assert dt_after <= dt_before + timedelta(hours=1)
 
-    # Choose the ambiguous local time equal to the repeated wall-clock time (use local_after)
+    # Choose the ambiguous local time equal to the repeated wall-clock time
+    # (use local_after)
     ambiguous_local = local_after
     naive_epoch = datetime_to_epoch(*ambiguous_local)
 
@@ -161,5 +167,3 @@ def test_southern_hemisphere_dst_transitions_pacific_auckland(tz_auckland):
     resolved2 = tz.local_to_utc_epoch(*ambiguous_local)
     if valid2:
         assert resolved2 == min(valid2)
-
-

@@ -302,4 +302,3 @@ def test_ensure_cache_recomputes_for_different_years() -> None:
     assert tz._cache_year == 2027
     assert isinstance(tz._cache_dst_start, int)
     assert isinstance(tz._cache_dst_end, int)
-
