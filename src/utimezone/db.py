@@ -4,17 +4,11 @@ _MAX_CACHE_SIZE = 10
 
 
 def _zones_csv_path():
-    try:
-        # Standard Python approach
-        import os
-        if hasattr(os, "path"):
-            base = os.path.dirname(os.path.abspath(__file__))
-            return os.path.join(base, "zones.csv")
-    except (ImportError, AttributeError, NameError):
-        pass
-
-    # MicroPython fallback
-    return "utimezone/zones.csv"
+    path = __file__
+    for sep in ('/', '\\'):
+        if sep in path:
+            return path.rsplit(sep, 1)[0] + sep + "zones.csv"
+    return "zones.csv"
 
 
 def _evict_if_needed():
@@ -54,15 +48,6 @@ def get_posix_rule_for_iana_name(iana_timezone_name):
         return _CACHE[iana_timezone_name]
 
     db_path = _zones_csv_path()
-    
-    # Try to verify path existence if 'os.path' is available
-    try:
-        import os
-        if hasattr(os, "path") and hasattr(os.path, "exists"):
-            if not os.path.exists(db_path):
-                return None
-    except (ImportError, AttributeError):
-        pass
 
     # noinspection PyBroadException
     try:
@@ -81,15 +66,6 @@ def _get_all_iana_names():
     """Return a list of all IANA names known in zones.csv."""
     db_path = _zones_csv_path()
     names = []
-
-    # Try to verify path existence if 'os.path' is available
-    try:
-        import os
-        if hasattr(os, "path") and hasattr(os.path, "exists"):
-            if not os.path.exists(db_path):
-                return names
-    except (ImportError, AttributeError):
-        pass
 
     # noinspection PyBroadException
     try:
