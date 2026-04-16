@@ -2,19 +2,41 @@
 
 Lightweight timezone helpers for Python and MicroPython.
 
-`utimezone` is a compact, dependency-free library for handling IANA and POSIX timezones on constrained systems like the Raspberry Pi Pico. It uses embedded timezone rules to provide accurate UTC-to-local conversions and DST support without the overhead of a full standard library.
+`utimezone` is a lightweight, dependency-free library for handling IANA and POSIX timezones on constrained systems like the Raspberry Pi Pico. It uses embedded timezone rules to provide accurate UTC-to-local conversions and DST support without the overhead of a full standard library.
 
-> [!IMPORTANT]  
-> Status: early-development (WIP). Core logic is stable but some features are still being added.
+> [!IMPORTANT]
+> Status: stable. Core logic is verified against IANA data.
 
 ## Features
 
 - **IANA Name Support:** Look up timezones by name (e.g., `Europe/London`, `America/New_York`).
 - **POSIX Rule Parsing:** Support for custom POSIX TZ strings (e.g., `EST5EDT,M3.2.0,M11.1.0`).
-- **MicroPython Optimised:** Avoids heavy objects and `datetime` dependencies; uses simple tuples and epoch integers. Supports negative epochs (pre-1970).
+- **MicroPython Optimized:** Avoids heavy objects and `datetime` dependencies; uses simple tuples and epoch integers. Supports negative epochs (pre-1970).
 - **DST Aware:** Correctly handles DST transitions, including ambiguous (clocks back) and skipped (clocks forward) local times.
 - **Embedded Database:** Includes a built-in mapping of IANA names to POSIX rules.
+- **MicroPython Package Manager:** Fully compatible with `mip` for easy installation.
 - **Zero Dependencies:** Pure Python implementation with no runtime requirements.
+
+## Installation
+
+### MicroPython (recommended)
+
+The easiest way to install `utimezone` is using `mip`. Run this on your MicroPython board (requires internet access):
+
+```python
+import mip
+mip.install("github:samcorky/utimezone")
+```
+
+Alternatively, you can manually copy the `src/utimezone` directory from this repository to your board's `lib/` folder so it appears as `lib/utimezone/`.
+
+### Python (Development)
+
+If you are using this on standard Python for testing or simulation:
+
+```bash
+pip install .
+```
 
 ## Quick Start
 
@@ -65,7 +87,7 @@ local_now = tz.utc_datetime_to_local(now_utc)
 | `is_dst_at(*dt)`                         | Returns `True` if the local date/time (tuple or args) is in DST.          |
 | `offset_for_epoch(epoch)`                | Returns the active UTC offset (seconds) for a UTC epoch.                  |
 | `offset_at(*dt)`                         | Returns the active UTC offset (seconds) for a local date/time.            |
-| `name_for_epoch(epoch)`                  | Returns the abbreviation (e.g., `"GMT"`, `"BST"`) for a UTC epoch.        |
+| `name_for_epoch(epoch)`                  | Returns the abbreviation (e.g., `"GMT"`, `"BST"`) or `None` for a UTC epoch. |
 | `name_at(*dt)`                           | Returns the abbreviation for a local date/time.                           |
 | `utc_epoch_to_local(epoch)`              | Converts UTC epoch to a local time tuple.                                 |
 | `utc_datetime_to_local(*dt)`             | Converts UTC date/time to a local time tuple.                             |
@@ -79,7 +101,7 @@ local_now = tz.utc_datetime_to_local(now_utc)
 
 - `datetime_to_epoch(y, m, d, h, mi, s)`: Convert components to UTC epoch seconds.
 - `epoch_to_ymdhms(epoch)`: Convert UTC epoch to a `(y, m, d, h, mi, s)` tuple.
-- `format_iso8601(y, m, d, h, mi, s, off)`: Format components and offset (seconds) as ISO 8601.
+- `format_iso8601(y, m, d, h, mi, s, offset_seconds=0)`: Format components and offset (seconds) as ISO 8601.
 - `parse_signed_hms_to_seconds(s)`: Parse POSIX-style offset strings like `"-05:30"`.
 
 ## Intended Scope

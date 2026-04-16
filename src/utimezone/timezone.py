@@ -17,7 +17,7 @@ _POSIX_TZ_RE: re.Pattern = re.compile(
 
 
 class TimeZone:
-    """Represent a compact timezone rule set derived from IANA/POSIX definitions.
+    """Represent a lightweight timezone rule set derived from IANA/POSIX definitions.
 
     The object exposes a small, portable public API that operates primarily on
     epoch seconds or plain (year, month, day, hour, minute, second) tuples so
@@ -71,8 +71,9 @@ class TimeZone:
     def from_posix_timezone_string(cls, posix_timezone_string: str) -> "TimeZone":
         """Create a TimeZone from a POSIX timezone string.
 
-        This is useful for constructing custom or compact timezone definitions
-        without relying on an IANA name.
+        This is useful for constructing custom or lightweight timezone definitions
+        without relying on an IANA name. This is particularly efficient on MicroPython
+        as it skips the IANA-to-POSIX lookup.
 
         Args:
             posix_timezone_string: a POSIX TZ string. Example:

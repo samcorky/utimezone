@@ -16,8 +16,13 @@
     "posix",
     "dst"
   ],
-  "files": [
-    "src/utimezone/"
+  "urls": [
+    ["utimezone/db.py", "github:samcorky/utimezone/src/utimezone/db.py"],
+    ["utimezone/__init__.py", "github:samcorky/utimezone/src/utimezone/__init__.py"],
+    ["utimezone/timezone.py", "github:samcorky/utimezone/src/utimezone/timezone.py"],
+    ["utimezone/transition_rule.py", "github:samcorky/utimezone/src/utimezone/transition_rule.py"],
+    ["utimezone/utils.py", "github:samcorky/utimezone/src/utimezone/utils.py"],
+    ["utimezone/zones.csv", "github:samcorky/utimezone/src/utimezone/zones.csv"]
   ]
 }
 

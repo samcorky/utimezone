@@ -1,7 +1,7 @@
 [project]
 name = "utimezone"
 version = "0.1.0"
-description = "Micropython Compatible Timezone Helpers"
+description = "Lightweight timezone helpers for Python and MicroPython"
 requires-python = ">=3.10"
 dependencies = []
 

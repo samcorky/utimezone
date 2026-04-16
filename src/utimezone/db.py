@@ -5,8 +5,14 @@ _MAX_CACHE_SIZE = 10
 
 
 def _zones_csv_path():
-    base = os.path.abspath(os.path.dirname(__file__))
-    return os.path.join(base, "zones.csv")
+    try:
+        # noinspection PyUnresolvedReferences
+        import os
+        base = os.path.abspath(os.path.dirname(__file__))
+        return os.path.join(base, "zones.csv")
+    except ImportError:
+        # MicroPython fallback
+        return "utimezone/zones.csv"
 
 
 def _evict_if_needed():
@@ -46,8 +52,14 @@ def get_posix_rule_for_iana_name(iana_timezone_name):
         return _CACHE[iana_timezone_name]
 
     db_path = _zones_csv_path()
-    if not os.path.exists(db_path):
-        return None
+    
+    # Try to verify path existence if 'os' is available
+    try:
+        import os
+        if not os.path.exists(db_path):
+            return None
+    except ImportError:
+        pass
 
     # noinspection PyBroadException
     try:
