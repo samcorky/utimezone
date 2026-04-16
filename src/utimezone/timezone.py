@@ -41,16 +41,21 @@ class TimeZone:
     _cache_dst_start: int | None
     _cache_dst_end: int | None
 
-    def __init__(self, iana_timezone_name: str) -> None:
+    def __init__(self, iana_timezone_name: str | None = None) -> None:
         """Create a TimeZone from a known IANA timezone name.
 
         Args:
-            iana_timezone_name: a key present in the embedded `IANA_TO_POSIX_MAP`.
+            iana_timezone_name: a key present in the embedded database.
+                If None, you MUST use from_posix_timezone_string instead.
 
         Raises:
             ValueError: if the provided IANA name is not known.
         """
         self._init_state()
+
+        if iana_timezone_name is None:
+            # from_posix_timezone_string will set up the rest
+            return
 
         from . import db
 
@@ -79,8 +84,7 @@ class TimeZone:
             posix_timezone_string: a POSIX TZ string. Example:
                 "EST5EDT,M3.2.0,M11.1.0".
         """
-        tz = cls.__new__(cls)
-        tz._init_state()
+        tz = cls(None)
         tz._posix_timezone_string = posix_timezone_string
         tz._parse_posix_timezone_string()
         return tz
