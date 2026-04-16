@@ -1,6 +1,18 @@
 import pytest
 from utimezone.timezone import TimeZone
 
+@pytest.fixture(scope="module")
+def tz_strange():
+    # A hypothetical "StrangeZone" with:
+    # - 13m 47s standard offset (very unusual)
+    # - Bracketed name with multiple '+' signs (unusual)
+    # - DST offset that is smaller than standard offset (negative DST, technically valid)
+    # - DST starts on the 5th (last) Monday of February at -1:30:15 (negative transition time)
+    # - DST ends on day 300 (non-leap year) at 25:45:10 (transition time > 24h)
+    return TimeZone.from_posix_timezone_string(
+        "<STRANGE++>0:13:47<DST--1>-0:45:13,M2.5.1/-1:30:15,300/25:45:10"
+    )
+
 def test_strange_timezone_parsing(tz_strange: TimeZone):
     """Ensure extremely complex and non-standard but valid POSIX strings are parsed correctly."""
     assert tz_strange._std_tz_name == "<STRANGE++>"
