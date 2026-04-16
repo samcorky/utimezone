@@ -106,38 +106,42 @@ class TimeZone:
         if m is None:
             raise ValueError(f"Invalid POSIX timezone string: {s}")
 
-        std_name = m.group(1)
-        std_off = m.group(2)
-        dst_name = m.group(6)
-        dst_off = m.group(7)
-        start = m.group(11)
-        end = m.group(12)
+        # Extract groups: std_name, std_off, dst_name, dst_off, start, end
+        std_name, std_off = m.group(1), m.group(2)
+        dst_name, dst_off = m.group(6), m.group(7)
+        start, end = m.group(11), m.group(12)
 
-        # Standard time
         self._std_tz_name = std_name
         self._std_offset = -parse_signed_hms_to_seconds(std_off)
 
-        # DST (if present)
         if dst_name is None:
-            self._has_dst = False
-            self._dst_tz_name = None
-            self._dst_offset = None
-            self._dst_start_rule = None
-            self._dst_end_rule = None
+            self._init_fixed_offset()
         else:
-            self._has_dst = True
-            self._dst_tz_name = dst_name
-            if dst_off is None:
-                self._dst_offset = self._std_offset + 3600
-            else:
-                self._dst_offset = -parse_signed_hms_to_seconds(dst_off)
+            self._init_dst_offset(dst_name, dst_off)
+            self._init_dst_rules(start, end)
 
-            self._dst_start_rule = (
-                _TransitionRule(start, self._std_offset) if start is not None else None
-            )
-            self._dst_end_rule = (
-                _TransitionRule(end, self._dst_offset) if end is not None else None
-            )
+    def _init_fixed_offset(self) -> None:
+        self._has_dst = False
+        self._dst_tz_name = None
+        self._dst_offset = None
+        self._dst_start_rule = None
+        self._dst_end_rule = None
+
+    def _init_dst_offset(self, dst_name: str, dst_off: str | None) -> None:
+        self._has_dst = True
+        self._dst_tz_name = dst_name
+        if dst_off is None:
+            self._dst_offset = self._std_offset + 3600
+        else:
+            self._dst_offset = -parse_signed_hms_to_seconds(dst_off)
+
+    def _init_dst_rules(self, start: str | None, end: str | None) -> None:
+        self._dst_start_rule = (
+            _TransitionRule(start, self._std_offset) if start is not None else None
+        )
+        self._dst_end_rule = (
+            _TransitionRule(end, self._dst_offset) if end is not None else None
+        )
 
     def _ensure_cache(self, year: int) -> None:
         if not self._has_dst:
@@ -323,30 +327,8 @@ class TimeZone:
         year, month, day, hour, minute, second = self._get_datetime_components(dt, *args)
         naive_epoch = datetime_to_epoch(year, month, day, hour, minute, second)
 
-        candidates: list[int] = []
-        std_candidate = int(naive_epoch) - self._std_offset
-        candidates.append(std_candidate)
-
-        if self._has_dst and self._dst_offset is not None:
-            dst_candidate = int(naive_epoch) - self._dst_offset
-            # avoid duplicate if offsets are equal
-            if dst_candidate != std_candidate:
-                candidates.append(dst_candidate)
-
-        valid: list[int] = []
-        for c in candidates:
-            if self.offset_for_epoch(c) == self._std_offset:
-                # candidate maps to standard offset
-                if c == std_candidate:
-                    valid.append(c)
-            else:
-                # candidate maps to dst offset
-                if (
-                    self._has_dst
-                    and self._dst_offset is not None
-                    and c == int(naive_epoch) - self._dst_offset
-                ):
-                    valid.append(c)
+        candidates = self._get_utc_candidates(naive_epoch)
+        valid = [c for c in candidates if self._is_valid_candidate(c, naive_epoch)]
 
         if len(valid) == 1:
             return valid[0]
@@ -356,7 +338,23 @@ class TimeZone:
             return min(valid)
 
         # No valid candidate found (skipped time): fall back to standard candidate
-        return std_candidate
+        return int(naive_epoch) - self._std_offset
+
+    def _get_utc_candidates(self, naive_epoch: int) -> list[int]:
+        """Return potential UTC instants for a naive local epoch."""
+        candidates: list[int] = [int(naive_epoch) - self._std_offset]
+
+        if self._has_dst and self._dst_offset is not None:
+            dst_candidate = int(naive_epoch) - self._dst_offset
+            if dst_candidate not in candidates:
+                candidates.append(dst_candidate)
+
+        return candidates
+
+    def _is_valid_candidate(self, candidate_epoch: int, naive_epoch: int) -> bool:
+        """Check if a UTC candidate instant maps back to the correct local offset."""
+        active_offset = self.offset_for_epoch(candidate_epoch)
+        return int(naive_epoch) - active_offset == candidate_epoch
 
     def __repr__(self) -> str:
         if self.iana_timezone_name is not None:

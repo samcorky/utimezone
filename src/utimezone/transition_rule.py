@@ -74,18 +74,18 @@ class _TransitionRule:
             raise ValueError(f"Unsupported DST rule: {rule!r}")
 
         self.rule_type = "M"
-        self.month = int(m.group(1))
-        self.week = int(m.group(2))
-        self.weekday = int(m.group(3))
+        self.month, self.week, self.weekday = map(int, m.group(1, 2, 3))
 
-        if not (0 <= self.weekday <= 6):
-            raise ValueError(f"Bad weekday: {self.weekday}")
-        if not (1 <= self.week <= 5):
-            raise ValueError(f"Bad week: {self.week}")
+        self._validate_m_rule()
+        self.seconds = self._parse_rule_time(m.group(5))
+
+    def _validate_m_rule(self) -> None:
         if not (1 <= self.month <= 12):
             raise ValueError(f"Bad month: {self.month}")
-
-        self.seconds = self._parse_rule_time(m.group(5))
+        if not (1 <= self.week <= 5):
+            raise ValueError(f"Bad week: {self.week}")
+        if not (0 <= self.weekday <= 6):
+            raise ValueError(f"Bad weekday: {self.weekday}")
 
     def _parse_julian_rule(self, rule: str) -> None:
         m = re.match("^J([0-9]+)(/(.+))?$", rule)
