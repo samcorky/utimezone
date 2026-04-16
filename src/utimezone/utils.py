@@ -85,6 +85,42 @@ def epoch_to_utc_year(epoch_seconds: int) -> int:
         year += 1
 
 
+def epoch_to_ymdhms(epoch_seconds: int) -> tuple[int, int, int, int, int, int]:
+    """Convert a non-negative epoch (seconds since 1970-01-01 00:00:00 UTC)
+    to a UTC date/time tuple (year, month, day, hour, minute, second).
+
+    This is the inverse of `datetime_to_epoch` for non-negative values.
+    """
+    if epoch_seconds < 0:
+        raise ValueError("Negative epoch values are not supported")
+
+    days = epoch_seconds // 86400
+    seconds_in_day = epoch_seconds % 86400
+
+    hour = seconds_in_day // 3600
+    minute = (seconds_in_day % 3600) // 60
+    second = seconds_in_day % 60
+
+    # Invert the algorithm used in datetime_to_epoch
+    # days_since_epoch = era * 146097 + doe - 719468
+    d = days + 719468
+
+    era = d // 146097
+    doe = d - era * 146097  # day-of-era
+
+    yoe = (doe - doe // 1460 + doe // 36524 - doe // 146096) // 365
+    y = int(yoe) + era * 400
+
+    doy = doe - (365 * yoe + yoe // 4 - yoe // 100)
+    mp = (5 * doy + 2) // 153
+
+    day = doy - (153 * mp + 2) // 5 + 1
+    month = mp + 3 if mp < 10 else mp - 9
+    year = y + (0 if mp < 10 else 1)
+
+    return year, month, day, hour, minute, second
+
+
 _TIME_PART_RE = re.compile("^([+-])?([0-9]+)(:([0-9]+)(:([0-9]+))?)?$")
 
 

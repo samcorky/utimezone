@@ -2,7 +2,12 @@ import re
 
 from .db import IANA_TO_POSIX_MAP
 from .transition_rule import _TransitionRule
-from .utils import datetime_to_epoch, epoch_to_utc_year, parse_signed_hms_to_seconds
+from .utils import (
+    datetime_to_epoch,
+    epoch_to_utc_year,
+    parse_signed_hms_to_seconds,
+    epoch_to_ymdhms,
+)
 
 _POSIX_TZ_RE: re.Pattern = re.compile(
     r"^(<[^>]+>|[A-Za-z]+)([+-]?[0-9]+(:[0-9]+(:[0-9]+)?)?)((<[^>]+>|[A-Za-z]+)([+-]?[0-9]+(:[0-9]+(:[0-9]+)?)?)?)?(,([^,]+),([^,]+))?$"
@@ -181,6 +186,75 @@ class TimeZone:
         if self.is_dst_at(year, month, day, hour, minute, second):
             return self._dst_tz_name
         return self._std_tz_name
+
+    # Convenience helpers that operate directly on epoch seconds
+    def offset_for_epoch(self, epoch_seconds: int) -> int:
+        """Return UTC->local offset in seconds for the given UTC epoch seconds."""
+        return self._dst_offset if self.is_dst(epoch_seconds) else self._std_offset
+
+    def name_for_epoch(self, epoch_seconds: int) -> str | None:
+        """Return the active timezone abbreviation for the given UTC epoch seconds."""
+        return self._dst_tz_name if self.is_dst(epoch_seconds) else self._std_tz_name
+
+    def utc_epoch_to_local(self, epoch_seconds: int) -> tuple[int, int, int, int, int, int]:
+        """Convert a UTC epoch to local (year, month, day, hour, minute, second).
+
+        The returned components are in local time (UTC + offset_for_epoch).
+        """
+        offset = self.offset_for_epoch(epoch_seconds)
+        local_epoch = epoch_seconds + offset
+        return epoch_to_ymdhms(int(local_epoch))
+
+    def local_to_utc_epoch(
+        self,
+        year: int,
+        month: int,
+        day: int,
+        hour: int = 0,
+        minute: int = 0,
+        second: int = 0,
+    ) -> int:
+        """Convert a local date/time to a UTC epoch (seconds since 1970-01-01).
+
+        This performs a best-effort mapping. For zones with DST it will try both
+        the standard and DST offsets and pick the candidate that is consistent
+        with the timezone rules. If both are consistent (ambiguous local time)
+        the earlier UTC instant is returned. If neither candidate appears valid
+        (the local time was skipped by a forward transition), the standard-offset
+        candidate is returned.
+        """
+        naive_epoch = datetime_to_epoch(year, month, day, hour, minute, second)
+
+        candidates: list[int] = []
+        std_candidate = int(naive_epoch) - self._std_offset
+        candidates.append(std_candidate)
+
+        if self._has_dst and self._dst_offset is not None:
+            dst_candidate = int(naive_epoch) - self._dst_offset
+            # avoid duplicate if offsets are equal
+            if dst_candidate != std_candidate:
+                candidates.append(dst_candidate)
+
+        valid: list[int] = []
+        for c in candidates:
+            if self.offset_for_epoch(c) == self._std_offset:
+                # candidate maps to standard offset
+                if c == std_candidate:
+                    valid.append(c)
+            else:
+                # candidate maps to dst offset
+                if self._has_dst and self._dst_offset is not None and c == int(naive_epoch) - self._dst_offset:
+                    valid.append(c)
+
+        if len(valid) == 1:
+            return valid[0]
+
+        if len(valid) > 1:
+            # ambiguous time: return the earlier UTC instant
+            return min(valid)
+
+        # No valid candidate found (skipped time): fall back to standard candidate
+        return std_candidate
 
     def __repr__(self) -> str:
         if self.iana_timezone_name is not None:
