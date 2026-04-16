@@ -207,6 +207,35 @@ class TimeZone:
         local_epoch = epoch_seconds + offset
         return epoch_to_ymdhms(int(local_epoch))
 
+    def utc_datetime_to_local(self, dt: tuple[int, int, int, int, int, int]) -> tuple[int, int, int, int, int, int]:
+        """Convert a UTC datetime tuple to local (year, month, day, hour, minute, second).
+
+        Args:
+            dt: (year, month, day, hour, minute, second) in UTC
+
+        Returns:
+            (year, month, day, hour, minute, second) in local wall-clock time
+        """
+        year, month, day, hour, minute, second = dt
+        epoch = datetime_to_epoch(year, month, day, hour, minute, second)
+        return self.utc_epoch_to_local(epoch)
+
+    def local_datetime_to_utc(self, dt: tuple[int, int, int, int, int, int]) -> tuple[int, int, int, int, int, int]:
+        """Convert a local naive datetime tuple to a UTC datetime tuple.
+
+        This resolves ambiguous or skipped local times using the existing
+        `local_to_utc_epoch` logic and then converts the resulting UTC epoch
+        back to a (year, month, day, hour, minute, second) tuple.
+        Args:
+            dt: (year, month, day, hour, minute, second) in local wall-clock time
+
+        Returns:
+            (year, month, day, hour, minute, second) in UTC
+        """
+        year, month, day, hour, minute, second = dt
+        utc_epoch = self.local_to_utc_epoch(year, month, day, hour, minute, second)
+        return epoch_to_ymdhms(int(utc_epoch))
+
     def local_to_utc_epoch(
         self,
         year: int,
