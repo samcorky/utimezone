@@ -43,9 +43,12 @@ pip install .
 You can verify the installation using the MicroPython Unix port (via Docker) with this one-liner:
 
 ```bash
-docker run --rm -it micropython/unix sh -c "\
-  micropython -m mip install github:samcorky/utimezone@develop --no-mpy && \
-  micropython -c 'from utimezone import TimeZone; print(TimeZone(\"Europe/London\"))'"
+git clone https://github.com/samcorky/utimezone.git
+
+docker run --rm -it -v "$(pwd):/app" -w /app micropython/unix sh -c "
+  export MICROPYPATH=/app/src:/root/.micropython/lib && \
+  micropython tests/test_timezone_public_api.py
+"
 ```
 
 ## Quick Start
