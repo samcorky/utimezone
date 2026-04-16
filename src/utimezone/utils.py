@@ -41,7 +41,7 @@ def day_of_week(year: int, month: int, day: int) -> int:
 
 
 def day_of_year_to_month_day(year: int, day_of_year: int) -> tuple[int, int]:
-    """Convert 1-indexed day-of-year (1-366) to (month, day)."""
+    """Convert 1-indexed day-of-year to (month, day)."""
     if day_of_year < 1:
         raise ValueError(f"Bad day_of_year: {day_of_year}")
     month = 1
@@ -74,12 +74,18 @@ def datetime_to_epoch(
 
 
 def epoch_to_utc_year(epoch_seconds: int) -> int:
-    if epoch_seconds < 0:
-        raise ValueError("Negative epoch values are not supported")
-
     year = 1970
     days_remaining = epoch_seconds // 86400
 
+    if days_remaining < 0:
+        # Move back in time
+        while days_remaining < 0:
+            year -= 1
+            year_days = 366 if is_leap_year(year) else 365
+            days_remaining += year_days
+        return year
+
+    # Move forward in time
     while True:
         year_days = 366 if is_leap_year(year) else 365
         if days_remaining < year_days:
@@ -89,14 +95,7 @@ def epoch_to_utc_year(epoch_seconds: int) -> int:
 
 
 def epoch_to_ymdhms(epoch_seconds: int) -> tuple[int, int, int, int, int, int]:
-    """Convert a non-negative epoch (seconds since 1970-01-01 00:00:00 UTC)
-    to a UTC date/time tuple (year, month, day, hour, minute, second).
-
-    This is the inverse of `datetime_to_epoch` for non-negative values.
-    """
-    if epoch_seconds < 0:
-        raise ValueError("Negative epoch values are not supported")
-
+    """Convert an epoch to a UTC date/time tuple (y, m, d, h, mi, s)."""
     days = epoch_seconds // 86400
     seconds_in_day = epoch_seconds % 86400
 

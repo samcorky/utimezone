@@ -11,22 +11,9 @@ from .utils import (
 
 
 class _TransitionRule:
-    """
-    Compact, MicroPython-friendly representation of a POSIX TZ rule.
+    """MicroPython-friendly representation of a POSIX TZ rule.
 
-    Supported forms:
-      Mm.w.d[/time]
-      Jn[/time]
-      n[/time]
-
-    Stored fields:
-      rule_type: "M", "J", or "N"
-      month: 1..12                 (for M rules)
-      week:  1..5 (5 means "last") (for M rules)
-      weekday: 0..6 (0=Sunday)     (for M rules)
-      day: day number              (for J / n rules)
-      seconds: transition time in seconds from 00:00
-               (can be negative or >86400)
+    Supported forms: Mm.w.d[/time], Jn[/time], n[/time].
     """
 
     def __init__(self, posix_rule: str, transition_offset_seconds: int = 0) -> None:
@@ -48,14 +35,7 @@ class _TransitionRule:
         self._parse_posix_rule()
 
     def _parse_posix_rule(self) -> None:
-        """
-        Supports POSIX rule forms:
-          Mm.w.d[/time]
-          Jn[/time]
-          n[/time]
-
-        If /time omitted, POSIX default is 02:00.
-        """
+        """Parse POSIX rule forms (M, J, N). Default time is 02:00."""
         rule = self.posix_rule
 
         if rule.startswith("M"):
@@ -154,7 +134,7 @@ class _TransitionRule:
 
         raise ValueError(f"Unsupported rule type: {self.rule_type}")
 
-    # TODO - Can this be moved out to utils and improved?
+    # TODO: consider moving this date-shift logic to utils for reuse/improvement
     @staticmethod
     def _shift_date(
         year: int, month: int, day: int, day_shift: int

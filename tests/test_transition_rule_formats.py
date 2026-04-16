@@ -161,6 +161,6 @@ def test_shift_date_year_boundaries() -> None:
     assert _TransitionRule._shift_date(2023, 3, 1, -31) == (2023, 1, 29)
 
 
-def test_epoch_to_utc_year_negative_raises() -> None:
-    with pytest.raises(ValueError):
-        epoch_to_utc_year(-1)
+def test_epoch_to_utc_year_negative_works() -> None:
+    # No longer raises ValueError
+    assert epoch_to_utc_year(-1) == 1969

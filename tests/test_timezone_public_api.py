@@ -139,9 +139,50 @@ def test_api_param_consistency_gb():
     assert tz.utc_datetime_to_local(2026, 6, 15) == tz.utc_datetime_to_local((2026, 6, 15))
 
 
+def test_fold_behaviour():
+    """Ensure that fold=True/False (bool) works for ambiguous local times."""
+    # London transition: 2024-10-27
+    # 02:00:00 BST -> 01:00:00 GMT
+    # Offset changes from +3600 to 0.
+    # Local time 01:30:00 is ambiguous.
+    tz = TimeZone("Europe/London")
+
+    # fold=False (default) -> Earlier UTC instant
+    # 01:30:00 BST = 00:30:00 UTC
+    # 01:30:00 GMT = 01:30:00 UTC
+    dt_tuple = (2024, 10, 27, 1, 30, 0)
+
+    epoch_fold_0 = tz.local_to_utc_epoch(dt_tuple, fold=False)
+    epoch_fold_1 = tz.local_to_utc_epoch(dt_tuple, fold=True)
+
+    # Verify they are 3600 seconds apart
+    assert epoch_fold_1 - epoch_fold_0 == 3600
+
+    # Check that fold=False corresponds to DST in London (since it's earlier)
+    assert tz.is_dst(epoch_fold_0) is True
+    assert tz.is_dst(epoch_fold_1) is False
+
+    # Test with positional arguments
+    epoch_pos_0 = tz.local_to_utc_epoch(2024, 10, 27, 1, 30, 0, False)
+    epoch_pos_1 = tz.local_to_utc_epoch(2024, 10, 27, 1, 30, 0, True)
+    assert epoch_pos_0 == epoch_fold_0
+    assert epoch_pos_1 == epoch_fold_1
+
+
+def test_local_datetime_to_utc_with_fold():
+    """Ensure local_datetime_to_utc respects the fold parameter."""
+    tz = TimeZone("Europe/London")
+    dt = (2024, 10, 27, 1, 30, 0)
+
+    utc_0 = tz.local_datetime_to_utc(dt, fold=False)
+    utc_1 = tz.local_datetime_to_utc(dt, fold=True)
+
+    assert utc_0 == (2024, 10, 27, 0, 30, 0)
+    assert utc_1 == (2024, 10, 27, 1, 30, 0)
+
+
 if __name__ == "__main__":
-    # This module can be executed directly under MicroPython or CPython.
-    # It prints a summary similar to pytest.
+    # Allow running this file directly (prints a pytest-like summary).
     total = 0
     passed = 0
     failed = 0

@@ -1,7 +1,7 @@
 import pytest
 
 from utimezone.timezone import TimeZone
-from utimezone.utils import datetime_to_epoch, epoch_to_ymdhms
+from utimezone.utils import datetime_to_epoch, epoch_to_ymdhms, epoch_to_utc_year
 
 
 @pytest.mark.parametrize(
@@ -22,6 +22,29 @@ def test_epoch_to_ymdhms_roundtrip(y, m, d, h, mi, s):
     epoch = datetime_to_epoch(y, m, d, h, mi, s)
     y2, m2, d2, h2, mi2, s2 = epoch_to_ymdhms(epoch)
     assert (y, m, d, h, mi, s) == (y2, m2, d2, h2, mi2, s2)
+
+
+def test_negative_epoch_conversion():
+    """Ensure conversions work for dates before 1970 (negative epochs)."""
+    # 1969-12-31 23:59:59 UTC
+    epoch = -1
+    expected = (1969, 12, 31, 23, 59, 59)
+    assert epoch_to_ymdhms(epoch) == expected
+    assert datetime_to_epoch(*expected) == epoch
+    assert epoch_to_utc_year(epoch) == 1969
+
+    # 1900-01-01 00:00:00 UTC
+    # Calculated via standard tool or known value
+    # 1970 - 1900 = 70 years.
+    # Leaps between 1900 and 1970: 1904, 08, 12, 16, 20, 24, 28, 32, 36, 40, 44, 48, 52, 56, 60, 64, 68 (17 leaps)
+    # 1900 itself is NOT a leap year in Gregorian.
+    # Days = 70 * 365 + 17 = 25550 + 17 = 25567 days.
+    # Seconds = 25567 * 86400 = 2208988800
+    epoch = -2208988800
+    expected = (1900, 1, 1, 0, 0, 0)
+    assert epoch_to_ymdhms(epoch) == expected
+    assert datetime_to_epoch(*expected) == epoch
+    assert epoch_to_utc_year(epoch) == 1900
 
 
 def test_utc_epoch_to_local_and_name_and_offset_for_fixed_zone(tz_kolkata):
