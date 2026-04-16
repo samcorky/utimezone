@@ -7,6 +7,7 @@ from .utils import (
     days_in_month,
     is_leap_year,
     parse_signed_hms_to_seconds,
+    shift_date,
 )
 
 
@@ -134,29 +135,6 @@ class _TransitionRule:
 
         raise ValueError(f"Unsupported rule type: {self.rule_type}")
 
-    # TODO: consider moving this date-shift logic to utils for reuse/improvement
-    @staticmethod
-    def _shift_date(
-        year: int, month: int, day: int, day_shift: int
-    ) -> tuple[int, int, int]:
-        day += day_shift
-
-        while day < 1:
-            month -= 1
-            if month < 1:
-                month = 12
-                year -= 1
-            day += days_in_month(year, month)
-
-        while day > days_in_month(year, month):
-            day -= days_in_month(year, month)
-            month += 1
-            if month > 12:
-                month = 1
-                year += 1
-
-        return year, month, day
-
     def get_transition(self, year: int) -> int:
         month, day = self._resolve_month_day(year)
 
@@ -167,7 +145,7 @@ class _TransitionRule:
         minute = (second_of_day % 3600) // 60
         second = second_of_day % 60
 
-        trans_year, trans_month, trans_day = self._shift_date(
+        trans_year, trans_month, trans_day = shift_date(
             year, month, day, day_shift
         )
 

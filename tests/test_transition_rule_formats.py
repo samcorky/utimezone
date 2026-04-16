@@ -5,6 +5,7 @@ from utimezone.utils import (
     datetime_to_epoch,
     epoch_to_utc_year,
     parse_signed_hms_to_seconds,
+    shift_date,
 )
 
 
@@ -155,10 +156,10 @@ def test_transition_get_transition_applies_offset() -> None:
 
 
 def test_shift_date_year_boundaries() -> None:
-    assert _TransitionRule._shift_date(2023, 1, 1, -1) == (2022, 12, 31)
-    assert _TransitionRule._shift_date(2023, 12, 31, 1) == (2024, 1, 1)
+    assert shift_date(2023, 1, 1, -1) == (2022, 12, 31)
+    assert shift_date(2023, 12, 31, 1) == (2024, 1, 1)
     # Multi-month negative shift (March 1, 2023 minus 31 days -> Jan 29, 2023)
-    assert _TransitionRule._shift_date(2023, 3, 1, -31) == (2023, 1, 29)
+    assert shift_date(2023, 3, 1, -31) == (2023, 1, 29)
 
 
 def test_epoch_to_utc_year_negative_works() -> None:

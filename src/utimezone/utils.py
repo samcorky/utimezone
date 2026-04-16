@@ -149,3 +149,26 @@ def parse_signed_hms_to_seconds(value: str) -> int:
         raise ValueError(f"Bad time value (minute/second out of range): {value!r}")
 
     return sign * (h * 3600 + mm * 60 + ss)
+
+
+def shift_date(
+    year: int, month: int, day: int, day_shift: int
+) -> tuple[int, int, int]:
+    """Shift a date by a number of days, correctly handling month/year boundaries."""
+    day += day_shift
+
+    while day < 1:
+        month -= 1
+        if month < 1:
+            month = 12
+            year -= 1
+        day += days_in_month(year, month)
+
+    while day > days_in_month(year, month):
+        day -= days_in_month(year, month)
+        month += 1
+        if month > 12:
+            month = 1
+            year += 1
+
+    return year, month, day
