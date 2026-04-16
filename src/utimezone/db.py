@@ -4,58 +4,76 @@ _CACHE = {}
 _MAX_CACHE_SIZE = 10
 
 
-def _zones_csv_path() -> str:
-    return os.path.dirname(__file__) + os.sep + "zones.csv"
+def _zones_csv_path():
+    base = os.path.abspath(os.path.dirname(__file__))
+    return os.path.join(base, "zones.csv")
 
 
-def get_posix_rule_for_iana_name(iana_timezone_name: str) -> str | None:
+def _evict_if_needed():
+    """Clear cache when capacity is reached."""
+    if len(_CACHE) >= _MAX_CACHE_SIZE:
+        _CACHE.clear()
+
+
+def _parse_zone_line(line):
+    """Parse a CSV-ish line into (iana_name, posix_rule)."""
+    line = line.strip()
+    if not line:
+        return None
+
+    parts = line.split('\",\"', 1)
+    if len(parts) < 2:
+        return None
+
+    name = parts[0].strip('"')
+    posix_rule = parts[1].strip('"')
+    return name, posix_rule
+
+
+def _read_zones(db_path):
+    """Yield (iana_name, posix_rule) tuples from the zones file."""
+    with open(db_path, encoding="utf-8") as f:
+        for raw in f:
+            parsed = _parse_zone_line(raw)
+            if parsed:
+                yield parsed
+
+
+def get_posix_rule_for_iana_name(iana_timezone_name):
+    """Return the POSIX rule for an IANA timezone name, or None."""
+    # fast path
     if iana_timezone_name in _CACHE:
         return _CACHE[iana_timezone_name]
 
-    current_dir = os.path.dirname(__file__)
-    db_path = current_dir + os.sep + "zones.csv"
-
+    db_path = _zones_csv_path()
     if not os.path.exists(db_path):
         return None
 
-    rule = None
     # noinspection PyBroadException
     try:
-        with open(db_path, encoding="utf-8") as f:
-            for line in f:
-                line = line.strip()
-                if not line:
-                    continue
-                parts = line.split('","')
-                if len(parts) != 2:
-                    continue
-                name = parts[0].strip('"')
-                posix_rule = parts[1].strip('"')
-                if name == iana_timezone_name:
-                    rule = posix_rule
-                    break
+        for name, posix_rule in _read_zones(db_path):
+            if name == iana_timezone_name:
+                _evict_if_needed()
+                _CACHE[iana_timezone_name] = posix_rule
+                return posix_rule
     except Exception:
         return None
 
-    if rule:
-        if len(_CACHE) >= _MAX_CACHE_SIZE:
-            # Simple cache eviction: just clear it
-            _CACHE.clear()
-        _CACHE[iana_timezone_name] = rule
-
-    return rule
+    return None
 
 
 def _get_all_iana_names():
-    current_dir = os.path.dirname(__file__)
-    db_path = current_dir + os.sep + "zones.csv"
+    """Return a list of all IANA names known in zones.csv."""
+    db_path = _zones_csv_path()
     names = []
-    if os.path.exists(db_path):
-        with open(db_path, encoding="utf-8") as f:
-            for line in f:
-                line = line.strip()
-                if line:
-                    parts = line.split('","')
-                    if parts:
-                        names.append(parts[0].strip('"'))
+    if not os.path.exists(db_path):
+        return names
+
+    # noinspection PyBroadException
+    try:
+        for name, _ in _read_zones(db_path):
+            names.append(name)
+    except Exception:
+        return names
+
     return names
