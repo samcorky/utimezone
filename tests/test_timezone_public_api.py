@@ -116,7 +116,7 @@ def test_local_to_utc_and_back_roundtrip():
     assert back == local
 
 
-def test_api_parameter_consistency():
+def test_api_param_consistency_gb():
     tz = TimeZone("Europe/London")
     dt_tuple = (2026, 6, 15, 12, 0, 0)
     dt_args = (2026, 6, 15, 12, 0, 0)

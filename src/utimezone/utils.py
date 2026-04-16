@@ -41,6 +41,9 @@ def day_of_week(year: int, month: int, day: int) -> int:
 
 
 def day_of_year_to_month_day(year: int, day_of_year: int) -> tuple[int, int]:
+    """Convert 1-indexed day-of-year (1-366) to (month, day)."""
+    if day_of_year < 1:
+        raise ValueError(f"Bad day_of_year: {day_of_year}")
     month = 1
 
     while True:

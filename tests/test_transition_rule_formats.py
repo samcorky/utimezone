@@ -94,7 +94,9 @@ def test_transition_rule_rejects_invalid_rules(rule: str) -> None:
         ("J60", 2024, 3, 1),
         ("59", 2023, 3, 1),
         ("59", 2024, 2, 29),
-        ("364", 2024, 12, 30),
+        ("60", 2024, 3, 1),
+        ("364", 2023, 12, 31),
+        ("365", 2024, 12, 31),
     ],
 )
 def test_resolve_month_day(

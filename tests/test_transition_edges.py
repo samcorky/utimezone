@@ -103,7 +103,7 @@ def test_dst_boundary_semantics_pacific_auckland(tz_auckland):
     end = tz._cache_dst_end
     assert start is not None and end is not None
 
-    # For southern hemisphere, behavior at start and end is the same semantics
+    # For southern hemisphere, behaviour at start and end is the same semantics
     assert tz.is_dst(start - 1) is False
     assert tz.is_dst(start) is True
 
