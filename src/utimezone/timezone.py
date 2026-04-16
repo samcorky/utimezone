@@ -6,6 +6,7 @@ from .utils import (
     datetime_to_epoch,
     epoch_to_utc_year,
     epoch_to_ymdhms,
+    format_iso8601,
     parse_signed_hms_to_seconds,
 )
 
@@ -169,13 +170,16 @@ class TimeZone:
             s = dt[5] if len(dt) > 5 else 0
             return y, mo, d, h, mi, s
 
-        y = dt
-        mo = args[0] if len(args) > 0 else 1
-        d = args[1] if len(args) > 1 else 1
-        h = args[2] if len(args) > 2 else 0
-        mi = args[3] if len(args) > 3 else 0
-        s = args[4] if len(args) > 4 else 0
-        return y, mo, d, h, mi, s
+        if len(args) >= 2:
+            y = dt
+            mo = args[0]
+            d = args[1]
+            h = args[2] if len(args) > 2 else 0
+            mi = args[3] if len(args) > 3 else 0
+            s = args[4] if len(args) > 4 else 0
+            return y, mo, d, h, mi, s
+
+        return epoch_to_ymdhms(int(dt))
 
     def is_dst(self, epoch_seconds: int) -> bool:
         """Return True if the given UTC epoch (seconds) falls in DST for this zone.
@@ -308,6 +312,34 @@ class TimeZone:
             return valid[1] if actual_fold else valid[0]
 
         return int(naive_epoch) - self._std_offset
+
+    def to_iso8601(
+        self,
+        dt: tuple[int, int, int, int, int, int] | int,
+        *args: int,
+        is_local: bool = False,
+    ) -> str:
+        """Return an ISO 8601 formatted string (e.g., 2026-04-16T13:41:00+01:00).
+
+        If `is_local=False` (default), `dt` is treated as a UTC datetime/epoch.
+        If `is_local=True`, `dt` is treated as a local datetime/epoch (already
+        containing the timezone's offset).
+        """
+        actual_is_local = is_local
+        if len(args) == 6:
+            actual_is_local = bool(args[5])
+            args = args[:5]
+
+        y, mo, d, h, mi, s = self._get_datetime_components(dt, *args)
+
+        if not actual_is_local:
+            epoch = datetime_to_epoch(y, mo, d, h, mi, s)
+            offset = self.offset_for_epoch(epoch)
+            y, mo, d, h, mi, s = self.utc_epoch_to_local(epoch)
+        else:
+            offset = self.offset_at(y, mo, d, h, mi, s)
+
+        return format_iso8601(y, mo, d, h, mi, s, offset)
 
     def _get_utc_candidates(self, naive_epoch: int) -> list[int]:
         """Return potential UTC instants for a naive local epoch."""

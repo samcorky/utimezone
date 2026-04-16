@@ -151,6 +151,23 @@ def parse_signed_hms_to_seconds(value: str) -> int:
     return sign * (h * 3600 + mm * 60 + ss)
 
 
+def format_iso8601(
+    year: int, month: int, day: int, hour: int, minute: int, second: int, offset_seconds: int = 0
+) -> str:
+    """Format a date/time and offset as an ISO 8601 string."""
+    dt_str = f"{year:04d}-{month:02d}-{day:02d}T{hour:02d}:{minute:02d}:{second:02d}"
+
+    if offset_seconds == 0:
+        return f"{dt_str}Z"
+
+    sign = "+" if offset_seconds >= 0 else "-"
+    abs_offset = abs(offset_seconds)
+    off_h = abs_offset // 3600
+    off_m = (abs_offset % 3600) // 60
+
+    return f"{dt_str}{sign}{off_h:02d}:{off_m:02d}"
+
+
 def shift_date(
     year: int, month: int, day: int, day_shift: int
 ) -> tuple[int, int, int]:
