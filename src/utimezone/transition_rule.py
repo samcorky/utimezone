@@ -55,7 +55,9 @@ class _TransitionRule:
             raise ValueError(f"Unsupported DST rule: {rule!r}")
 
         self.rule_type = "M"
-        self.month, self.week, self.weekday = map(int, m.group(1, 2, 3))
+        self.month = int(m.group(1))
+        self.week = int(m.group(2))
+        self.weekday = int(m.group(3))
 
         self._validate_m_rule()
         self.seconds = self._parse_rule_time(m.group(5))
