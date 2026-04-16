@@ -14,8 +14,20 @@ packages = ["src/utimezone"]
 
 [dependency-groups]
 dev = [
-    "pytest>=9.0.2",
+    "pre-commit>=4.0.0",
+    "pytest>=9.0.3",
+    "ruff>=0.11.6",
 ]
+
+[tool.ruff]
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "W", "F", "I", "UP", "B"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
 
 [tool.pytest.ini_options]
 pythonpath = ["src"]

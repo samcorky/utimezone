@@ -1,0 +1,23 @@
+{
+  "name": "utimezone",
+  "version": "0.1.0",
+  "description": "Lightweight timezone helpers for Python and MicroPython",
+  "author": "Sam Cork",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/samcorky/utimezone"
+  },
+  "keywords": [
+    "timezone",
+    "micropython",
+    "embedded",
+    "iana",
+    "posix",
+    "dst"
+  ],
+  "files": [
+    "src/utimezone/"
+  ]
+}
+
