@@ -9,12 +9,23 @@ from .utils import (
     parse_signed_hms_to_seconds,
 )
 
+# Note: we intentionally avoid typing overloads here to keep the source
+# compatible with MicroPython. The public methods below accept tuples
+# for date/time inputs (y, m, d, h, mi, s).
+
 _POSIX_TZ_RE: re.Pattern = re.compile(
     r"^(<[^>]+>|[A-Za-z]+)([+-]?[0-9]+(:[0-9]+(:[0-9]+)?)?)((<[^>]+>|[A-Za-z]+)([+-]?[0-9]+(:[0-9]+(:[0-9]+)?)?)?)?(,([^,]+),([^,]+))?$"
 )
 
 
 class TimeZone:
+    """Represent a compact timezone rule set derived from IANA/POSIX definitions.
+
+    The object exposes a small, portable public API that operates primarily on
+    epoch seconds or plain (year, month, day, hour, minute, second) tuples so
+    it remains friendly to MicroPython and other constrained environments.
+    """
+
     iana_timezone_name: str | None
     _posix_timezone_string: str
 
@@ -33,6 +44,14 @@ class TimeZone:
     _cache_dst_end: int | None
 
     def __init__(self, iana_timezone_name: str) -> None:
+        """Create a TimeZone from a known IANA timezone name.
+
+        Args:
+            iana_timezone_name: a key present in the embedded `IANA_TO_POSIX_MAP`.
+
+        Raises:
+            ValueError: if the provided IANA name is not known.
+        """
         self._init_state()
 
         self.iana_timezone_name = iana_timezone_name
@@ -42,8 +61,20 @@ class TimeZone:
         self._posix_timezone_string = IANA_TO_POSIX_MAP[iana_timezone_name]
         self._parse_posix_timezone_string()
 
+    # The public API below uses tuple-based datetime inputs for consistency
+    # and simplicity in MicroPython environments.
+
     @classmethod
     def from_posix_timezone_string(cls, posix_timezone_string: str) -> "TimeZone":
+        """Create a TimeZone from a POSIX timezone string.
+
+        This is useful for constructing custom or compact timezone definitions
+        without relying on an IANA name.
+
+        Args:
+            posix_timezone_string: a POSIX TZ string. Example:
+                "EST5EDT,M3.2.0,M11.1.0".
+        """
         tz = cls.__new__(cls)
         tz._init_state()
         tz._posix_timezone_string = posix_timezone_string
@@ -127,7 +158,33 @@ class TimeZone:
         self._cache_dst_start = self._dst_start_rule.get_transition(year)
         self._cache_dst_end = self._dst_end_rule.get_transition(year)
 
+    def _get_datetime_components(self, dt, *args):
+        if isinstance(dt, (tuple, list)):
+            if len(dt) < 3:
+                raise ValueError("datetime tuple must have at least 3 elements (y, m, d)")
+            y, mo, d = dt[0], dt[1], dt[2]
+            h = dt[3] if len(dt) > 3 else 0
+            mi = dt[4] if len(dt) > 4 else 0
+            s = dt[5] if len(dt) > 5 else 0
+            return y, mo, d, h, mi, s
+
+        y = dt
+        mo = args[0] if len(args) > 0 else 1
+        d = args[1] if len(args) > 1 else 1
+        h = args[2] if len(args) > 2 else 0
+        mi = args[3] if len(args) > 3 else 0
+        s = args[4] if len(args) > 4 else 0
+        return y, mo, d, h, mi, s
+
     def is_dst(self, epoch_seconds: int) -> bool:
+        """Return True if the given UTC epoch (seconds) falls in DST for this zone.
+
+        Args:
+            epoch_seconds: seconds since 1970-01-01 00:00:00 UTC (non-negative).
+
+        Returns:
+            True when DST rules apply at the given UTC instant, False otherwise.
+        """
         if not self._has_dst:
             return False
 
@@ -137,11 +194,11 @@ class TimeZone:
         if self._cache_dst_start is None or self._cache_dst_end is None:
             return False
 
-        # Northern hemisphere style: DST starts and ends within the same calendar year.
+        # Northern Hemisphere style: DST starts and ends within the same calendar year.
         if self._cache_dst_start < self._cache_dst_end:
             return self._cache_dst_start <= epoch_seconds < self._cache_dst_end
 
-        # Southern hemisphere style: DST season crosses the new year boundary.
+        # Southern Hemisphere style: DST season crosses the new year boundary.
         return (
             epoch_seconds >= self._cache_dst_start
             or epoch_seconds < self._cache_dst_end
@@ -149,26 +206,34 @@ class TimeZone:
 
     def is_dst_at(
         self,
-        year: int,
-        month: int,
-        day: int,
-        hour: int = 0,
-        minute: int = 0,
-        second: int = 0,
+        dt: tuple[int, int, int, int, int, int] | int,
+        *args: int,
     ) -> bool:
-        epoch_seconds = datetime_to_epoch(year, month, day, hour, minute, second)
+        """Return whether the given local date/time is in DST.
+
+        Accepts either:
+        - a single tuple/list: (y, m, d, [h, mi, s])
+        - numeric components: year, month, day, [hour, minute, second]
+
+        It forwards to `is_dst` after converting to an epoch using
+        `datetime_to_epoch`.
+        """
+        y, mo, d, h, mi, s = self._get_datetime_components(dt, *args)
+        epoch_seconds = datetime_to_epoch(y, mo, d, h, mi, s)
         return self.is_dst(epoch_seconds)
 
     def offset_at(
         self,
-        year: int,
-        month: int,
-        day: int,
-        hour: int = 0,
-        minute: int = 0,
-        second: int = 0,
+        dt: tuple[int, int, int, int, int, int] | int,
+        *args: int,
     ) -> int:
-        if self.is_dst_at(year, month, day, hour, minute, second):
+        """Return the active UTC->local offset (seconds) for a given local date/time.
+
+        Accepts either a single tuple/list or numeric components.
+        """
+        y, mo, d, h, mi, s = self._get_datetime_components(dt, *args)
+
+        if self.is_dst_at(y, mo, d, h, mi, s):
             if self._dst_offset is None:
                 raise ValueError("DST offset missing for DST-aware timezone")
             return self._dst_offset
@@ -176,24 +241,35 @@ class TimeZone:
 
     def name_at(
         self,
-        year: int,
-        month: int,
-        day: int,
-        hour: int = 0,
-        minute: int = 0,
-        second: int = 0,
+        dt: tuple[int, int, int, int, int, int] | int,
+        *args: int,
     ) -> str | None:
-        if self.is_dst_at(year, month, day, hour, minute, second):
+        """Return the active timezone abbreviation for a given local date/time.
+
+        Accepts either a single tuple/list or numeric components.
+        Returns the DST abbreviation when DST is in effect, otherwise the
+        standard-time abbreviation.
+        """
+        y, mo, d, h, mi, s = self._get_datetime_components(dt, *args)
+
+        if self.is_dst_at(y, mo, d, h, mi, s):
             return self._dst_tz_name
         return self._std_tz_name
 
     # Convenience helpers that operate directly on epoch seconds
     def offset_for_epoch(self, epoch_seconds: int) -> int:
-        """Return UTC->local offset in seconds for the given UTC epoch seconds."""
+        """Return the active UTC->local offset (seconds) for a UTC epoch.
+
+        This is the epoch-based variant of `offset_at` and is useful when you
+        already have a UTC instant (seconds since the epoch).
+        """
         return self._dst_offset if self.is_dst(epoch_seconds) else self._std_offset
 
     def name_for_epoch(self, epoch_seconds: int) -> str | None:
-        """Return the active timezone abbreviation for the given UTC epoch seconds."""
+        """Return the active timezone abbreviation for a UTC epoch.
+
+        See `name_at` for the tuple-based variant.
+        """
         return self._dst_tz_name if self.is_dst(epoch_seconds) else self._std_tz_name
 
     def utc_epoch_to_local(
@@ -207,53 +283,44 @@ class TimeZone:
         local_epoch = epoch_seconds + offset
         return epoch_to_ymdhms(int(local_epoch))
 
-    def utc_datetime_to_local(self, dt: tuple[int, int, int, int, int, int]) -> tuple[int, int, int, int, int, int]:
-        """Convert a UTC datetime tuple to local (year, month, day, hour, minute, second).
+    def utc_datetime_to_local(
+        self, dt: tuple[int, int, int, int, int, int] | int, *args: int
+    ) -> tuple[int, int, int, int, int, int]:
+        """Convert a UTC datetime to local.
 
-        Args:
-            dt: (year, month, day, hour, minute, second) in UTC
-
-        Returns:
-            (year, month, day, hour, minute, second) in local wall-clock time
+        Accepts either a tuple/list (y,m,d,[h,mi,s]) or numeric components.
         """
-        year, month, day, hour, minute, second = dt
-        epoch = datetime_to_epoch(year, month, day, hour, minute, second)
+        y, mo, d, h, mi, s = self._get_datetime_components(dt, *args)
+        epoch = datetime_to_epoch(y, mo, d, h, mi, s)
         return self.utc_epoch_to_local(epoch)
 
-    def local_datetime_to_utc(self, dt: tuple[int, int, int, int, int, int]) -> tuple[int, int, int, int, int, int]:
-        """Convert a local naive datetime tuple to a UTC datetime tuple.
+    def local_datetime_to_utc(
+        self, dt: tuple[int, int, int, int, int, int] | int, *args: int
+    ) -> tuple[int, int, int, int, int, int]:
+        """Convert a local naive datetime to a UTC datetime tuple.
 
-        This resolves ambiguous or skipped local times using the existing
-        `local_to_utc_epoch` logic and then converts the resulting UTC epoch
-        back to a (year, month, day, hour, minute, second) tuple.
-        Args:
-            dt: (year, month, day, hour, minute, second) in local wall-clock time
-
-        Returns:
-            (year, month, day, hour, minute, second) in UTC
+        Accepts either a tuple/list (y,m,d,[h,mi,s]) or numeric components.
         """
-        year, month, day, hour, minute, second = dt
-        utc_epoch = self.local_to_utc_epoch(year, month, day, hour, minute, second)
+        y, mo, d, h, mi, s = self._get_datetime_components(dt, *args)
+        utc_epoch = self.local_to_utc_epoch(y, mo, d, h, mi, s)
         return epoch_to_ymdhms(int(utc_epoch))
 
     def local_to_utc_epoch(
         self,
-        year: int,
-        month: int,
-        day: int,
-        hour: int = 0,
-        minute: int = 0,
-        second: int = 0,
+        dt: tuple[int, int, int, int, int, int] | int,
+        *args: int,
     ) -> int:
-        """Convert a local date/time to a UTC epoch (seconds since 1970-01-01).
+        """Resolve a local naive date/time to a UTC epoch.
 
-        This performs a best-effort mapping. For zones with DST it will try both
-        the standard and DST offsets and pick the candidate that is consistent
-        with the timezone rules. If both are consistent (ambiguous local time)
-        the earlier UTC instant is returned. If neither candidate appears valid
-        (the local time was skipped by a forward transition), the standard-offset
-        candidate is returned.
+        Accepts either a tuple/list (y,m,d,[h,mi,s]) or numeric components.
+
+        The function tries both the standard and DST offsets (when applicable)
+        and returns a candidate consistent with the zone rules. If an ambiguous
+        local time occurs (e.g. clocks moved back), the earlier UTC instant is
+        returned. If the local time was skipped by a forward transition, the
+        standard-offset candidate is returned.
         """
+        year, month, day, hour, minute, second = self._get_datetime_components(dt, *args)
         naive_epoch = datetime_to_epoch(year, month, day, hour, minute, second)
 
         candidates: list[int] = []

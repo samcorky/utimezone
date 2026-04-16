@@ -116,6 +116,29 @@ def test_local_to_utc_and_back_roundtrip():
     assert back == local
 
 
+def test_api_parameter_consistency():
+    tz = TimeZone("Europe/London")
+    dt_tuple = (2026, 6, 15, 12, 0, 0)
+    dt_args = (2026, 6, 15, 12, 0, 0)
+
+    # is_dst_at
+    assert tz.is_dst_at(dt_tuple) == tz.is_dst_at(*dt_args)
+    # offset_at
+    assert tz.offset_at(dt_tuple) == tz.offset_at(*dt_args)
+    # name_at
+    assert tz.name_at(dt_tuple) == tz.name_at(*dt_args)
+    # utc_datetime_to_local
+    assert tz.utc_datetime_to_local(dt_tuple) == tz.utc_datetime_to_local(*dt_args)
+    # local_datetime_to_utc
+    assert tz.local_datetime_to_utc(dt_tuple) == tz.local_datetime_to_utc(*dt_args)
+    # local_to_utc_epoch
+    assert tz.local_to_utc_epoch(dt_tuple) == tz.local_to_utc_epoch(*dt_args)
+
+    # Test with partial args
+    assert tz.is_dst_at(2026, 6, 15) == tz.is_dst_at((2026, 6, 15))
+    assert tz.utc_datetime_to_local(2026, 6, 15) == tz.utc_datetime_to_local((2026, 6, 15))
+
+
 if __name__ == "__main__":
     # This module can be executed directly under MicroPython or CPython.
     # It prints a summary similar to pytest.
@@ -160,5 +183,3 @@ if __name__ == "__main__":
         raise SystemExit(1)
     else:
         print("All tests passed.")
-
-
