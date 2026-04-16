@@ -45,9 +45,9 @@ You can verify the installation using the MicroPython Unix port (via Docker) wit
 ```bash
 git clone https://github.com/samcorky/utimezone.git
 
-docker run --rm -it -v "$(pwd):/app" -w /app micropython/unix sh -c "
-  export MICROPYPATH=/app/src:/root/.micropython/lib && \
-  micropython tests/test_timezone_public_api.py
+docker run --rm -it -v "$(pwd)/tests/test_timezone_public_api.py:/test.py" micropython/unix sh -c "
+  micropython -m mip install github:samcorky/utimezone --no-mpy && \
+  micropython /test.py
 "
 ```
 
