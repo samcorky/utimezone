@@ -1,6 +1,11 @@
 import pytest
 
 from utimezone.transition_rule import _TransitionRule
+from utimezone.utils import (
+    parse_signed_hms_to_seconds,
+    datetime_to_epoch,
+    epoch_to_utc_year,
+)
 
 
 @pytest.mark.parametrize(
@@ -116,3 +121,45 @@ def test_repr_contains_useful_fields() -> None:
     assert "week=2" in rendered
     assert "weekday=0" in rendered
     assert "seconds=5025" in rendered
+
+
+def test_parse_signed_hms_errors_and_signs() -> None:
+    with pytest.raises(ValueError):
+        parse_signed_hms_to_seconds(None)  # type: ignore[arg-type]
+
+    with pytest.raises(ValueError):
+        parse_signed_hms_to_seconds("")
+
+    with pytest.raises(ValueError):
+        parse_signed_hms_to_seconds("1:60")
+
+    with pytest.raises(ValueError):
+        parse_signed_hms_to_seconds("1:59:60")
+
+    with pytest.raises(ValueError):
+        parse_signed_hms_to_seconds("not-a-time")
+
+    assert parse_signed_hms_to_seconds("-1:30") == -(1 * 3600 + 30 * 60)
+    assert parse_signed_hms_to_seconds("+2:00") == 2 * 3600
+
+
+def test_transition_get_transition_applies_offset() -> None:
+    # Second Sunday in March at 02:00, with a transition offset of 3600s
+    rule = _TransitionRule("M3.2.0/2", transition_offset_seconds=3600)
+    month, day = rule._resolve_month_day(2026)
+
+    expected_epoch = datetime_to_epoch(2026, month, day, 2, 0, 0) - 3600
+    assert rule.get_transition(2026) == expected_epoch
+
+
+def test_shift_date_year_boundaries() -> None:
+    assert _TransitionRule._shift_date(2023, 1, 1, -1) == (2022, 12, 31)
+    assert _TransitionRule._shift_date(2023, 12, 31, 1) == (2024, 1, 1)
+    # Multi-month negative shift (March 1, 2023 minus 31 days -> Jan 29, 2023)
+    assert _TransitionRule._shift_date(2023, 3, 1, -31) == (2023, 1, 29)
+
+
+def test_epoch_to_utc_year_negative_raises() -> None:
+    with pytest.raises(ValueError):
+        epoch_to_utc_year(-1)
+

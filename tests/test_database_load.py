@@ -18,3 +18,25 @@ def test_invalid_iana_name() -> None:
     """Ensure an unknown IANA timezone name is rejected."""
     with pytest.raises(ValueError):
         TimeZone("invalid/iana/name")
+
+@pytest.mark.parametrize("name",
+                         [
+                             "Europe/London",
+                             "America/New_York",
+                             "Asia/Tokyo",
+                             "Etc/UTC",
+                             "Etc/Greenwich",
+                             "Etc/GMT",
+                             "Etc/GMT+0",
+                             "Etc/GMT-0",
+                             "Etc/GMT0",
+                             "Etc/Zulu",
+                             "Etc/Universal",
+                             "Etc/UCT",
+                             "Etc/GMT+8",
+                             "Etc/GMT-8",
+                         ])
+def test_common_timezone_names_in_db(name: str) -> None:
+    """Ensure common timezone names are included in the database."""
+    assert name in IANA_TO_POSIX_MAP, f"{name} timezone missing from database"
+

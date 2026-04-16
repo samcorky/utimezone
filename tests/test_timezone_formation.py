@@ -274,3 +274,32 @@ def test_repr_contains_posix_string_for_custom_timezone() -> None:
     timezone = TimeZone.from_posix_timezone_string("EST5EDT,M3.2.0,M11.1.0")
 
     assert repr(timezone) == "<TimeZone EST5EDT,M3.2.0,M11.1.0>"
+
+
+def test_timezone_with_dst_no_rules_raises_on_ensure_cache() -> None:
+    tz = TimeZone.from_posix_timezone_string("EST5EDT")
+    assert tz._has_dst is True
+    assert tz._dst_start_rule is None
+    assert tz._dst_end_rule is None
+
+    with pytest.raises(ValueError):
+        tz._ensure_cache(2026)
+
+
+def test_ensure_cache_recomputes_for_different_years() -> None:
+    tz = TimeZone("Europe/London")
+
+    tz._ensure_cache(2026)
+    start1 = tz._cache_dst_start
+
+    # Calling again for same year should be a no-op (cache preserved)
+    tz._ensure_cache(2026)
+    start2 = tz._cache_dst_start
+    assert start1 == start2
+
+    # Calling for a different year should update the cache_year and compute transitions
+    tz._ensure_cache(2027)
+    assert tz._cache_year == 2027
+    assert isinstance(tz._cache_dst_start, int)
+    assert isinstance(tz._cache_dst_end, int)
+
