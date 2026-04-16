@@ -4,8 +4,8 @@ from utimezone.utils import datetime_to_epoch
 from utimezone.timezone import TimeZone
 
 
-def test_dst_start_skipped_local_time_europe_london():
-    tz = TimeZone("Europe/London")
+def test_dst_start_skipped_local_time_europe_london(tz_london):
+    tz = tz_london
     tz._ensure_cache(2026)
     start = tz._cache_dst_start
     assert start is not None
@@ -36,8 +36,8 @@ def test_dst_start_skipped_local_time_europe_london():
     assert resolved == std_candidate
 
 
-def test_dst_boundary_semantics_europe_london():
-    tz = TimeZone("Europe/London")
+def test_dst_boundary_semantics_europe_london(tz_london):
+    tz = tz_london
     tz._ensure_cache(2026)
     start = tz._cache_dst_start
     end = tz._cache_dst_end
@@ -52,8 +52,8 @@ def test_dst_boundary_semantics_europe_london():
     assert tz.is_dst(end) is False
 
 
-def test_dst_end_ambiguous_local_time_europe_london():
-    tz = TimeZone("Europe/London")
+def test_dst_end_ambiguous_local_time_europe_london(tz_london):
+    tz = tz_london
     tz._ensure_cache(2026)
     end = tz._cache_dst_end
     assert end is not None
@@ -90,8 +90,8 @@ def test_dst_end_ambiguous_local_time_europe_london():
         assert resolved == min(valid)
 
 
-def test_dst_boundary_semantics_pacific_auckland():
-    tz = TimeZone("Pacific/Auckland")
+def test_dst_boundary_semantics_pacific_auckland(tz_auckland):
+    tz = tz_auckland
     tz._ensure_cache(2026)
     start = tz._cache_dst_start
     end = tz._cache_dst_end
@@ -105,8 +105,8 @@ def test_dst_boundary_semantics_pacific_auckland():
     assert tz.is_dst(end) is False
 
 
-def test_southern_hemisphere_dst_transitions_pacific_auckland():
-    tz = TimeZone("Pacific/Auckland")
+def test_southern_hemisphere_dst_transitions_pacific_auckland(tz_auckland):
+    tz = tz_auckland
     tz._ensure_cache(2026)
     start = tz._cache_dst_start
     end = tz._cache_dst_end

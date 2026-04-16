@@ -24,8 +24,8 @@ def test_epoch_to_ymdhms_roundtrip(y, m, d, h, mi, s):
     assert (y, m, d, h, mi, s) == (y2, m2, d2, h2, mi2, s2)
 
 
-def test_utc_epoch_to_local_and_name_and_offset_for_fixed_zone():
-    tz = TimeZone("Asia/Kolkata")
+def test_utc_epoch_to_local_and_name_and_offset_for_fixed_zone(tz_kolkata):
+    tz = tz_kolkata
 
     epoch = datetime_to_epoch(2026, 1, 15, 12, 0, 0)  # UTC
     local = tz.utc_epoch_to_local(epoch)
@@ -36,33 +36,33 @@ def test_utc_epoch_to_local_and_name_and_offset_for_fixed_zone():
     assert tz.offset_for_epoch(epoch) == 5 * 3600 + 30 * 60
 
 
-def test_utc_epoch_to_local_and_name_and_offset_for_dst_zone():
-    tz = TimeZone("Europe/London")
+def test_utc_epoch_to_local_and_name_and_offset_for_dst_zone(tz_london, epoch_2026_jan15_noon, epoch_2026_jun15_noon):
+    tz = tz_london
 
-    epoch_winter = datetime_to_epoch(2026, 1, 15, 12, 0, 0)
+    epoch_winter = epoch_2026_jan15_noon
     assert tz.utc_epoch_to_local(epoch_winter) == (2026, 1, 15, 12, 0, 0)
     assert tz.name_for_epoch(epoch_winter) == "GMT"
     assert tz.offset_for_epoch(epoch_winter) == 0
 
-    epoch_summer = datetime_to_epoch(2026, 6, 15, 12, 0, 0)
+    epoch_summer = epoch_2026_jun15_noon
     assert tz.utc_epoch_to_local(epoch_summer) == (2026, 6, 15, 13, 0, 0)
     assert tz.name_for_epoch(epoch_summer) == "BST"
     assert tz.offset_for_epoch(epoch_summer) == 3600
 
 
-def test_local_to_utc_epoch_roundtrip_for_fixed_zone():
-    tz = TimeZone("Asia/Kolkata")
+def test_local_to_utc_epoch_roundtrip_for_fixed_zone(tz_kolkata):
+    tz = tz_kolkata
 
     local = (2026, 1, 15, 17, 30, 0)
     utc_epoch = tz.local_to_utc_epoch(*local)
     assert utc_epoch == datetime_to_epoch(2026, 1, 15, 12, 0, 0)
 
 
-def test_local_to_utc_epoch_roundtrip_for_dst_zone():
-    tz = TimeZone("Europe/London")
+def test_local_to_utc_epoch_roundtrip_for_dst_zone(tz_london, epoch_2026_jun15_noon):
+    tz = tz_london
 
     # Start from a UTC epoch, convert to local, then back to UTC
-    epoch = datetime_to_epoch(2026, 6, 15, 12, 0, 0)
+    epoch = epoch_2026_jun15_noon
     local = tz.utc_epoch_to_local(epoch)
     epoch_back = tz.local_to_utc_epoch(*local)
     assert epoch_back == epoch
@@ -77,22 +77,22 @@ def test_local_to_utc_epoch_roundtrip_for_dst_zone():
         ("Australia/Lord_Howe", (2026, 6, 15, 12, 0, 0)),
     ],
 )
-def test_local_roundtrip_quarter_and_half_hour_offsets(tz_name, local):
+def test_local_roundtrip_quarter_and_half_hour_offsets(tz_factory, tz_name, local):
     """Ensure zones with quarter/half-hour offsets round-trip local->utc->local."""
-    tz = TimeZone(tz_name)
+    tz = tz_factory(tz_name)
     utc_epoch = tz.local_to_utc_epoch(*local)
     local_back = tz.utc_epoch_to_local(utc_epoch)
     assert local_back == local
 
 
-def test_from_posix_timezone_string_roundtrip():
+def test_from_posix_timezone_string_roundtrip(tz_factory, epoch_2026_jun15_noon):
     tz = TimeZone.from_posix_timezone_string("EST5EDT,M3.2.0,M11.1.0")
     # Basic properties
     assert tz._std_tz_name == "EST"
     assert tz._dst_tz_name == "EDT"
 
     # Round-trip a summer time
-    epoch = datetime_to_epoch(2026, 6, 15, 12, 0, 0)
+    epoch = epoch_2026_jun15_noon
     local = tz.utc_epoch_to_local(epoch)
     epoch_back = tz.local_to_utc_epoch(*local)
     assert epoch_back == epoch
