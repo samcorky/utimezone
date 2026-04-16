@@ -1,10 +1,12 @@
 import pytest
 
-from utimezone.db import IANA_TO_POSIX_MAP
+from utimezone.db import _get_all_iana_names, get_posix_rule_for_iana_name
 from utimezone.timezone import TimeZone
 
+ALL_IANA_NAMES = _get_all_iana_names()
 
-@pytest.mark.parametrize("iana_name", IANA_TO_POSIX_MAP.keys())
+
+@pytest.mark.parametrize("iana_name", ALL_IANA_NAMES)
 def test_valid_iana_names(iana_name: str) -> None:
     """Ensure every IANA name in the embedded database can be constructed."""
     # Guard against accidental bad keys in the generated mapping.
@@ -41,4 +43,4 @@ def test_invalid_iana_name() -> None:
 )
 def test_common_timezone_names_in_db(name: str) -> None:
     """Ensure common timezone names are included in the database."""
-    assert name in IANA_TO_POSIX_MAP, f"{name} timezone missing from database"
+    assert get_posix_rule_for_iana_name(name) is not None, f"{name} timezone missing from database"
