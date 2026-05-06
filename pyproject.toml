@@ -18,6 +18,7 @@ dev = [
     "pytest>=9.0.3",
     "ruff>=0.11.6",
     "mypy>=1.10.0",
+    "pytest-cov>=4.0.0",
 ]
 
 [tool.ruff]
@@ -41,3 +42,28 @@ ignore_missing_imports = true
 [tool.pytest.ini_options]
 pythonpath = ["src"]
 testpaths = ["tests"]
+
+addopts = [
+    "--tb=short",
+    "--strict-markers",
+    "--strict-config",
+    "--cov=src/utimezone",
+    "--cov-report=term-missing",
+]
+
+[tool.coverage.run]
+source = ["src/utimezone"]
+omit = [
+    "tests/*",
+]
+
+
+[tool.coverage.report]
+fail_under = 100
+show_missing = true
+exclude_lines = [
+    "pragma: no cover",
+    "if TYPE_CHECKING:",
+    "raise NotImplementedError",
+    "@abstractmethod",
+]

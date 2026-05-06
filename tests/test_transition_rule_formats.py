@@ -165,3 +165,11 @@ def test_shift_date_year_boundaries() -> None:
 def test_epoch_to_utc_year_negative_works() -> None:
     # No longer raises ValueError
     assert epoch_to_utc_year(-1) == 1969
+
+
+def test_resolve_month_day_unsupported_rule_type() -> None:
+    rule = _TransitionRule("M3.2.0")
+    rule.rule_type = "X"
+
+    with pytest.raises(ValueError, match="Unsupported rule type: X"):
+        rule._resolve_month_day(2026)

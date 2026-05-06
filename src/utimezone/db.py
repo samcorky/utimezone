@@ -1,11 +1,10 @@
-
 _CACHE = {}
 _MAX_CACHE_SIZE = 10
 
 
 def _zones_csv_path():
     path = __file__
-    for sep in ('/', '\\'):
+    for sep in ("/", "\\"):
         if sep in path:
             return path.rsplit(sep, 1)[0] + sep + "zones.csv"
     return "zones.csv"
@@ -23,7 +22,7 @@ def _parse_zone_line(line):
     if not line:
         return None
 
-    parts = line.split('\",\"', 1)
+    parts = line.split('","', 1)
     if len(parts) < 2:
         return None
 

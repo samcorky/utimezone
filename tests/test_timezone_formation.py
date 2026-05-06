@@ -182,8 +182,6 @@ def test_ensure_cache_for_custom_funky_timezone_populates_transition_cache() -> 
     assert isinstance(timezone._cache_dst_end, int)
 
 
-
-
 def test_repr_contains_iana_name() -> None:
     """Ensure the debug representation includes the IANA timezone name."""
     timezone = TimeZone("Europe/London")

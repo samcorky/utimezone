@@ -1,18 +1,26 @@
-import sys
 import gc
-from utimezone.db import get_posix_rule_for_iana_name, _CACHE, _MAX_CACHE_SIZE, _get_all_iana_names
+import sys
+
+from utimezone.db import (
+    _CACHE,
+    _MAX_CACHE_SIZE,
+    _get_all_iana_names,
+    get_posix_rule_for_iana_name,
+)
+
 
 def test_cache_memory_eviction():
     """Cache does not grow without bound."""
     _CACHE.clear()
 
     iana_names = _get_all_iana_names()
-    test_names = iana_names[:_MAX_CACHE_SIZE + 5]
+    test_names = iana_names[: _MAX_CACHE_SIZE + 5]
 
     for name in test_names:
         get_posix_rule_for_iana_name(name)
 
     assert 0 < len(_CACHE) <= _MAX_CACHE_SIZE
+
 
 def test_memory_usage_basic():
     """Create and drop many TimeZone objects; ensure no large leak."""
@@ -36,6 +44,7 @@ def test_memory_usage_basic():
     after_cleanup = len(gc.get_objects())
     assert after_cleanup <= initial_objects + 10
 
+
 def test_size_of_cache_entries():
     """Cache keys/values are reasonably small strings."""
     _CACHE.clear()
@@ -48,6 +57,7 @@ def test_size_of_cache_entries():
 
         assert len(key) < 64
         assert len(value) < 128
+
 
 def test_memory_usage_iteration():
     """Iterate a timezone across 1 hour and ensure no obvious leak."""

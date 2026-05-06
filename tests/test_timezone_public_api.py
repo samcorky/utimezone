@@ -1,3 +1,5 @@
+import pytest
+
 from utimezone.timezone import TimeZone
 from utimezone.utils import datetime_to_epoch, epoch_to_ymdhms
 
@@ -136,7 +138,9 @@ def test_api_param_consistency_gb():
 
     # Test with partial args
     assert tz.is_dst_at(2026, 6, 15) == tz.is_dst_at((2026, 6, 15))
-    assert tz.utc_datetime_to_local(2026, 6, 15) == tz.utc_datetime_to_local((2026, 6, 15))
+    assert tz.utc_datetime_to_local(2026, 6, 15) == tz.utc_datetime_to_local(
+        (2026, 6, 15)
+    )
 
 
 def test_fold_behaviour():
@@ -179,6 +183,40 @@ def test_local_datetime_to_utc_with_fold():
 
     assert utc_0 == (2024, 10, 27, 0, 30, 0)
     assert utc_1 == (2024, 10, 27, 1, 30, 0)
+
+
+def test_get_datetime_components():
+    tz = TimeZone("Etc/UTC")
+    with pytest.raises(ValueError):
+        tz._get_datetime_components((2026,))
+
+
+def test_is_dst():
+    tz = TimeZone("America/New_York")
+    assert not tz.is_dst(0)  # Epoch time (winter)
+
+
+def test_offset_at():
+    tz = TimeZone("America/New_York")
+    # This should raise because it has < 3 elements
+    with pytest.raises(ValueError):
+        tz.offset_at((2026, 1))
+
+
+def test_local_datetime_to_utc_with_6_args():
+    tz = TimeZone("Europe/London")
+    # 2024-10-27 01:30:00, fold=True
+    # The 6th argument is fold if 6 arguments are passed (y, m, d, h, mi, fold)
+    # Wait, the code says:
+    # if len(args) == 6:
+    #     actual_fold = bool(args[5])
+    #     args = args[:5]
+    # So it expects (dt, arg0, arg1, arg2, arg3, arg4, arg5) where dt is year
+    res = tz.local_datetime_to_utc(2024, 10, 27, 1, 30, 0, True)
+    assert res == (2024, 10, 27, 1, 30, 0)
+
+    res_no_fold = tz.local_datetime_to_utc(2024, 10, 27, 1, 30, 0, False)
+    assert res_no_fold == (2024, 10, 27, 0, 30, 0)
 
 
 if __name__ == "__main__":

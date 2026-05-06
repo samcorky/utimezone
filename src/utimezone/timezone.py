@@ -171,9 +171,11 @@ class TimeZone:
         self._cache_dst_end = self._dst_end_rule.get_transition(year)
 
     def _get_datetime_components(self, dt, *args):
-        if isinstance(dt, (tuple, list)):
+        if isinstance(dt, tuple | list):
             if len(dt) < 3:
-                raise ValueError("datetime tuple must have at least 3 elements (y, m, d)")
+                raise ValueError(
+                    "datetime tuple must have at least 3 elements (y, m, d)"
+                )
             y, mo, d = dt[0], dt[1], dt[2]
             h = dt[3] if len(dt) > 3 else 0
             mi = dt[4] if len(dt) > 4 else 0
@@ -206,10 +208,6 @@ class TimeZone:
         year = epoch_to_utc_year(epoch_seconds)
         self._ensure_cache(year)
 
-        if self._cache_dst_start is None or self._cache_dst_end is None:
-            return False
-
-        # Northern Hemisphere style: DST starts and ends within the same calendar year.
         if self._cache_dst_start < self._cache_dst_end:
             return self._cache_dst_start <= epoch_seconds < self._cache_dst_end
 
@@ -238,8 +236,6 @@ class TimeZone:
         y, mo, d, h, mi, s = self._get_datetime_components(dt, *args)
 
         if self.is_dst_at(y, mo, d, h, mi, s):
-            if self._dst_offset is None:
-                raise ValueError("DST offset missing for DST-aware timezone")
             return self._dst_offset
         return self._std_offset
 
@@ -280,7 +276,10 @@ class TimeZone:
         return self.utc_epoch_to_local(epoch)
 
     def local_datetime_to_utc(
-        self, dt: tuple[int, int, int, int, int, int] | int, *args: int, fold: bool = False
+        self,
+        dt: tuple[int, int, int, int, int, int] | int,
+        *args: int,
+        fold: bool = False,
     ) -> tuple[int, int, int, int, int, int]:
         """Convert a local naive datetime to a UTC datetime tuple."""
         actual_fold = fold
@@ -288,8 +287,12 @@ class TimeZone:
             actual_fold = bool(args[5])
             args = args[:5]
 
-        year, month, day, hour, minute, second = self._get_datetime_components(dt, *args)
-        utc_epoch = self.local_to_utc_epoch(year, month, day, hour, minute, second, fold=actual_fold)
+        year, month, day, hour, minute, second = self._get_datetime_components(
+            dt, *args
+        )
+        utc_epoch = self.local_to_utc_epoch(
+            year, month, day, hour, minute, second, fold=actual_fold
+        )
         return epoch_to_ymdhms(int(utc_epoch))
 
     def local_to_utc_epoch(
@@ -305,10 +308,12 @@ class TimeZone:
         actual_fold = fold
 
         if len(args) == 6:
-             actual_fold = bool(args[5])
-             args = args[:5]
+            actual_fold = bool(args[5])
+            args = args[:5]
 
-        year, month, day, hour, minute, second = self._get_datetime_components(dt, *args)
+        year, month, day, hour, minute, second = self._get_datetime_components(
+            dt, *args
+        )
         naive_epoch = datetime_to_epoch(year, month, day, hour, minute, second)
 
         candidates = self._get_utc_candidates(naive_epoch)

@@ -1,7 +1,13 @@
 import pytest
 
 from utimezone.timezone import TimeZone
-from utimezone.utils import datetime_to_epoch, epoch_to_ymdhms, epoch_to_utc_year
+from utimezone.utils import (
+    datetime_to_epoch,
+    days_in_month,
+    epoch_to_utc_year,
+    epoch_to_ymdhms,
+    is_valid_date,
+)
 
 
 @pytest.mark.parametrize(
@@ -36,7 +42,8 @@ def test_negative_epoch_conversion():
     # 1900-01-01 00:00:00 UTC
     # Calculated via standard tool or known value
     # 1970 - 1900 = 70 years.
-    # Leaps between 1900 and 1970: 1904, 08, 12, 16, 20, 24, 28, 32, 36, 40, 44, 48, 52, 56, 60, 64, 68 (17 leaps)
+    # Leaps between 1900 and 1970:
+    # 1904, 08, 12, 16, 20, 24, 28, 32, 36, 40, 44, 48, 52, 56, 60, 64, 68 (17 leaps)
     # 1900 itself is NOT a leap year in Gregorian.
     # Days = 70 * 365 + 17 = 25550 + 17 = 25567 days.
     # Seconds = 25567 * 86400 = 2208988800
@@ -121,3 +128,25 @@ def test_from_posix_timezone_string_roundtrip(tz_factory, epoch_2026_jun15_noon)
     local = tz.utc_epoch_to_local(epoch)
     epoch_back = tz.local_to_utc_epoch(*local)
     assert epoch_back == epoch
+
+
+def test_days_in_month():
+    assert days_in_month(2026, 2) == 28  # Non-leap year
+    assert days_in_month(2024, 2) == 29  # Leap year
+    assert days_in_month(2026, 1) == 31
+    assert days_in_month(2026, 4) == 30
+    with pytest.raises(ValueError):
+        days_in_month(2026, 13)  # Invalid month
+
+
+def test_is_valid_date():
+    assert is_valid_date(2026, 2, 28)
+    assert not is_valid_date(2026, 2, 30)  # Invalid day
+    assert not is_valid_date(2026, 13, 1)  # Invalid month
+
+
+def test_day_of_year_to_month_day_error():
+    from utimezone.utils import day_of_year_to_month_day
+
+    with pytest.raises(ValueError, match="Bad day_of_year: 0"):
+        day_of_year_to_month_day(2026, 0)

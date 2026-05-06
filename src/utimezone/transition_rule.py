@@ -147,9 +147,7 @@ class _TransitionRule:
         minute = (second_of_day % 3600) // 60
         second = second_of_day % 60
 
-        trans_year, trans_month, trans_day = shift_date(
-            year, month, day, day_shift
-        )
+        trans_year, trans_month, trans_day = shift_date(year, month, day, day_shift)
 
         naive_epoch = datetime_to_epoch(
             trans_year, trans_month, trans_day, hour, minute, second
