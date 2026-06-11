@@ -1,0 +1,69 @@
+[project]
+name = "utimezone"
+version = "0.1.0"
+description = "Lightweight timezone helpers for Python and MicroPython"
+requires-python = ">=3.10"
+dependencies = []
+
+[build-system]
+requires = ["hatchling>=1.29.0"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/utimezone"]
+
+[dependency-groups]
+dev = [
+    "pre-commit>=4.0.0",
+    "pytest>=9.0.3",
+    "ruff>=0.11.6",
+    "mypy>=1.10.0",
+    "pytest-cov>=4.0.0",
+]
+
+[tool.ruff]
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "W", "F", "I", "UP", "B"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+
+[tool.mypy]
+python_version = "3.10"
+# Type-check the project package(s) under src/
+files = ["src"]
+# Allow missing imports (helps when running in environments without all deps)
+ignore_missing_imports = true
+
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
+
+addopts = [
+    "--tb=short",
+    "--strict-markers",
+    "--strict-config",
+    "--cov=src/utimezone",
+    "--cov-report=term-missing",
+]
+
+[tool.coverage.run]
+source = ["src/utimezone"]
+omit = [
+    "tests/*",
+]
+
+
+[tool.coverage.report]
+fail_under = 100
+show_missing = true
+exclude_lines = [
+    "pragma: no cover",
+    "if TYPE_CHECKING:",
+    "raise NotImplementedError",
+    "@abstractmethod",
+]

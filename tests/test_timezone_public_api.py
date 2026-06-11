@@ -1,0 +1,264 @@
+import pytest
+
+from utimezone.timezone import TimeZone
+from utimezone.utils import datetime_to_epoch, epoch_to_ymdhms
+
+
+def test_is_dst_false_for_non_dst_zone() -> None:
+    """Ensure fixed-offset zones never report DST."""
+    timezone = TimeZone("Africa/Bamako")
+
+    assert timezone.is_dst_at(2026, 1, 15, 12, 0, 0) is False
+    assert timezone.is_dst_at(2026, 6, 15, 12, 0, 0) is False
+
+
+def test_is_dst_at_works_for_northern_hemisphere_zone() -> None:
+    """Ensure DST state is correct for zones with start and end in the same year."""
+    timezone = TimeZone("Europe/London")
+
+    assert timezone.is_dst_at(2026, 1, 15, 12, 0, 0) is False
+    assert timezone.is_dst_at(2026, 6, 15, 12, 0, 0) is True
+    assert timezone.is_dst_at(2026, 12, 15, 12, 0, 0) is False
+
+
+def test_is_dst_at_works_for_southern_hemisphere_zone() -> None:
+    """Ensure DST state is correct for zones whose DST season crosses new year."""
+    timezone = TimeZone("Pacific/Auckland")
+
+    assert timezone.is_dst_at(2026, 1, 15, 12, 0, 0) is True
+    assert timezone.is_dst_at(2026, 6, 15, 12, 0, 0) is False
+    assert timezone.is_dst_at(2026, 12, 15, 12, 0, 0) is True
+
+
+def test_offset_and_name_at_works_for_southern_hemisphere_zone() -> None:
+    """Ensure offset and abbreviation switch correctly for southern hemisphere DST."""
+    timezone = TimeZone("Pacific/Auckland")
+
+    assert timezone.offset_at(2026, 1, 15, 12, 0, 0) == 13 * 3600
+    assert timezone.name_at(2026, 1, 15, 12, 0, 0) == "NZDT"
+
+    assert timezone.offset_at(2026, 6, 15, 12, 0, 0) == 12 * 3600
+    assert timezone.name_at(2026, 6, 15, 12, 0, 0) == "NZST"
+
+    assert timezone.offset_at(2026, 12, 15, 12, 0, 0) == 13 * 3600
+    assert timezone.name_at(2026, 12, 15, 12, 0, 0) == "NZDT"
+
+
+def test_is_dst_at_works_for_custom_posix_zone() -> None:
+    """Ensure custom POSIX-created zones support DST state queries."""
+    timezone = TimeZone.from_posix_timezone_string("EST5EDT,M3.2.0,M11.1.0")
+
+    assert timezone.is_dst_at(2026, 1, 15, 12, 0, 0) is False
+    assert timezone.is_dst_at(2026, 6, 15, 12, 0, 0) is True
+
+
+def test_offset_at_returns_standard_and_dst_offsets() -> None:
+    """Ensure tuple-based offset lookup returns the active UTC offset."""
+    timezone = TimeZone("Europe/London")
+
+    assert timezone.offset_at(2026, 1, 15, 12, 0, 0) == 0
+    assert timezone.offset_at(2026, 6, 15, 12, 0, 0) == 3600
+
+
+def test_offset_at_for_non_dst_zone_is_always_standard_offset() -> None:
+    """Ensure fixed-offset zones always return their standard offset."""
+    timezone = TimeZone("Asia/Kolkata")
+
+    assert timezone.offset_at(2026, 1, 15, 12, 0, 0) == 5 * 3600 + 30 * 60
+    assert timezone.offset_at(2026, 6, 15, 12, 0, 0) == 5 * 3600 + 30 * 60
+
+
+def test_name_at_returns_standard_and_dst_names() -> None:
+    """Ensure tuple-based name lookup returns the active timezone abbreviation."""
+    timezone = TimeZone("Europe/London")
+
+    assert timezone.name_at(2026, 1, 15, 12, 0, 0) == "GMT"
+    assert timezone.name_at(2026, 6, 15, 12, 0, 0) == "BST"
+
+
+def test_name_at_for_non_dst_zone_returns_standard_name() -> None:
+    """Ensure fixed-offset zones always return the standard abbreviation."""
+    timezone = TimeZone("Africa/Bamako")
+
+    assert timezone.name_at(2026, 1, 15, 12, 0, 0) == "GMT"
+    assert timezone.name_at(2026, 6, 15, 12, 0, 0) == "GMT"
+
+
+def test_repr_contains_iana_name() -> None:
+    """Ensure the debug representation includes the IANA timezone name."""
+    timezone = TimeZone("Europe/London")
+
+    assert repr(timezone) == "<TimeZone Europe/London>"
+
+
+def test_utc_datetime_to_local_basic():
+    # A straightforward UTC -> local conversion (tuple helpers)
+    utc = (2026, 6, 15, 12, 0, 0)
+    epoch = datetime_to_epoch(*utc)
+    tz = TimeZone("Europe/London")
+    expected = tz.utc_epoch_to_local(epoch)
+    assert tz.utc_datetime_to_local(utc) == expected
+
+
+def test_local_datetime_to_utc_basic():
+    # A straightforward local -> UTC conversion (tuple helpers)
+    local = (2026, 1, 15, 12, 0, 0)
+    tz = TimeZone("Europe/London")
+    utc_epoch = tz.local_to_utc_epoch(*local)
+    expected = epoch_to_ymdhms(int(utc_epoch))
+    assert tz.local_datetime_to_utc(local) == expected
+
+
+def test_local_to_utc_and_back_roundtrip():
+    # Non-DST local time should round-trip through UTC (tuple helpers)
+    local = (2026, 1, 15, 8, 30, 0)
+    tz = TimeZone("Europe/London")
+    utc_tuple = tz.local_datetime_to_utc(local)
+    back = tz.utc_datetime_to_local(utc_tuple)
+    assert back == local
+
+
+def test_api_param_consistency_gb():
+    tz = TimeZone("Europe/London")
+    dt_tuple = (2026, 6, 15, 12, 0, 0)
+    dt_args = (2026, 6, 15, 12, 0, 0)
+
+    # is_dst_at
+    assert tz.is_dst_at(dt_tuple) == tz.is_dst_at(*dt_args)
+    # offset_at
+    assert tz.offset_at(dt_tuple) == tz.offset_at(*dt_args)
+    # name_at
+    assert tz.name_at(dt_tuple) == tz.name_at(*dt_args)
+    # utc_datetime_to_local
+    assert tz.utc_datetime_to_local(dt_tuple) == tz.utc_datetime_to_local(*dt_args)
+    # local_datetime_to_utc
+    assert tz.local_datetime_to_utc(dt_tuple) == tz.local_datetime_to_utc(*dt_args)
+    # local_to_utc_epoch
+    assert tz.local_to_utc_epoch(dt_tuple) == tz.local_to_utc_epoch(*dt_args)
+
+    # Test with partial args
+    assert tz.is_dst_at(2026, 6, 15) == tz.is_dst_at((2026, 6, 15))
+    assert tz.utc_datetime_to_local(2026, 6, 15) == tz.utc_datetime_to_local(
+        (2026, 6, 15)
+    )
+
+
+def test_fold_behaviour():
+    """Ensure that fold=True/False (bool) works for ambiguous local times."""
+    # London transition: 2024-10-27
+    # 02:00:00 BST -> 01:00:00 GMT
+    # Offset changes from +3600 to 0.
+    # Local time 01:30:00 is ambiguous.
+    tz = TimeZone("Europe/London")
+
+    # fold=False (default) -> Earlier UTC instant
+    # 01:30:00 BST = 00:30:00 UTC
+    # 01:30:00 GMT = 01:30:00 UTC
+    dt_tuple = (2024, 10, 27, 1, 30, 0)
+
+    epoch_fold_0 = tz.local_to_utc_epoch(dt_tuple, fold=False)
+    epoch_fold_1 = tz.local_to_utc_epoch(dt_tuple, fold=True)
+
+    # Verify they are 3600 seconds apart
+    assert epoch_fold_1 - epoch_fold_0 == 3600
+
+    # Check that fold=False corresponds to DST in London (since it's earlier)
+    assert tz.is_dst(epoch_fold_0) is True
+    assert tz.is_dst(epoch_fold_1) is False
+
+    # Test with positional arguments
+    epoch_pos_0 = tz.local_to_utc_epoch(2024, 10, 27, 1, 30, 0, False)
+    epoch_pos_1 = tz.local_to_utc_epoch(2024, 10, 27, 1, 30, 0, True)
+    assert epoch_pos_0 == epoch_fold_0
+    assert epoch_pos_1 == epoch_fold_1
+
+
+def test_local_datetime_to_utc_with_fold():
+    """Ensure local_datetime_to_utc respects the fold parameter."""
+    tz = TimeZone("Europe/London")
+    dt = (2024, 10, 27, 1, 30, 0)
+
+    utc_0 = tz.local_datetime_to_utc(dt, fold=False)
+    utc_1 = tz.local_datetime_to_utc(dt, fold=True)
+
+    assert utc_0 == (2024, 10, 27, 0, 30, 0)
+    assert utc_1 == (2024, 10, 27, 1, 30, 0)
+
+
+def test_get_datetime_components():
+    tz = TimeZone("Etc/UTC")
+    with pytest.raises(ValueError):
+        tz._get_datetime_components((2026,))
+
+
+def test_is_dst():
+    tz = TimeZone("America/New_York")
+    assert not tz.is_dst(0)  # Epoch time (winter)
+
+
+def test_offset_at():
+    tz = TimeZone("America/New_York")
+    # This should raise because it has < 3 elements
+    with pytest.raises(ValueError):
+        tz.offset_at((2026, 1))
+
+
+def test_local_datetime_to_utc_with_6_args():
+    tz = TimeZone("Europe/London")
+    # 2024-10-27 01:30:00, fold=True
+    # The 6th argument is fold if 6 arguments are passed (y, m, d, h, mi, fold)
+    # Wait, the code says:
+    # if len(args) == 6:
+    #     actual_fold = bool(args[5])
+    #     args = args[:5]
+    # So it expects (dt, arg0, arg1, arg2, arg3, arg4, arg5) where dt is year
+    res = tz.local_datetime_to_utc(2024, 10, 27, 1, 30, 0, True)
+    assert res == (2024, 10, 27, 1, 30, 0)
+
+    res_no_fold = tz.local_datetime_to_utc(2024, 10, 27, 1, 30, 0, False)
+    assert res_no_fold == (2024, 10, 27, 0, 30, 0)
+
+
+if __name__ == "__main__":
+    # Allow running this file directly (prints a pytest-like summary).
+    total = 0
+    passed = 0
+    failed = 0
+    failures = []
+
+    # Collect test callables in definition order where possible
+    items = list(globals().items())
+    for name, obj in items:
+        if name.startswith("test_") and callable(obj):
+            total += 1
+            print("RUN", name)
+            try:
+                obj()
+                passed += 1
+                print("  OK")
+            except Exception as e:
+                failed += 1
+                failures.append((name, e))
+                print("  FAIL:", name, "->", e)
+
+    print("\n========================")
+    print(f"Total: {total}, Passed: {passed}, Failed: {failed}")
+    if failed:
+        print("\nFailures:")
+        for name, exc in failures:
+            print(f"- {name}: {exc}")
+            try:
+                import sys as _sys
+
+                if hasattr(_sys, "print_exception"):
+                    # MicroPython: print a full traceback-like message
+                    _sys.print_exception(exc)
+                else:
+                    # Fallback: print repr of exception
+                    print(repr(exc))
+            except Exception:
+                # best-effort, ignore errors printing exception
+                pass
+        raise SystemExit(1)
+    else:
+        print("All tests passed.")

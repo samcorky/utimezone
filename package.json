@@ -1,0 +1,27 @@
+{
+  "name": "utimezone",
+  "version": "0.1.0",
+  "description": "Lightweight timezone helpers for Python and MicroPython",
+  "author": "Sam Cork",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/samcorky/utimezone"
+  },
+  "keywords": [
+    "timezone",
+    "micropython",
+    "embedded",
+    "iana",
+    "posix",
+    "dst"
+  ],
+  "urls": [
+    ["utimezone/db.py", "github:samcorky/utimezone/src/utimezone/db.py"],
+    ["utimezone/__init__.py", "github:samcorky/utimezone/src/utimezone/__init__.py"],
+    ["utimezone/timezone.py", "github:samcorky/utimezone/src/utimezone/timezone.py"],
+    ["utimezone/transition_rule.py", "github:samcorky/utimezone/src/utimezone/transition_rule.py"],
+    ["utimezone/utils.py", "github:samcorky/utimezone/src/utimezone/utils.py"],
+    ["utimezone/zones.csv", "github:samcorky/utimezone/src/utimezone/zones.csv"]
+  ]
+}
