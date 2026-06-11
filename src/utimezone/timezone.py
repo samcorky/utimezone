@@ -1,3 +1,7 @@
+# utimezone
+# Licence: MIT
+# Repo: samcorky/utimezone
+
 import re
 
 from .transition_rule import _TransitionRule

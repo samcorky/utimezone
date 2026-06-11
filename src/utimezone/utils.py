@@ -1,3 +1,6 @@
+# utimezone
+# Licence: MIT
+# Repo: samcorky/utimezone
 import re
 
 

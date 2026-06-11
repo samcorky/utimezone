@@ -1,3 +1,6 @@
+# utimezone
+# Licence: MIT
+# Repo: samcorky/utimezone
 _CACHE = {}
 _MAX_CACHE_SIZE = 10
 
