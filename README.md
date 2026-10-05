@@ -25,6 +25,7 @@ The easiest way to install `utimezone` is using `mip`. Run this on your MicroPyt
 
 ```python
 import mip
+
 mip.install("github:samcorky/utimezone")
 ```
 
@@ -82,6 +83,7 @@ If you already have your date/time components in a tuple (common in MicroPython 
 
 ```python
 from utimezone import TimeZone
+
 tz = TimeZone("Europe/London")
 now_utc = (2026, 6, 15, 12, 0, 0)
 local_now = tz.utc_datetime_to_local(now_utc)
